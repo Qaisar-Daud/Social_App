@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "746787895119",
+    "project_id": "glintor",
+    "storage_bucket": "glintor.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:746787895119:android:99fa10d9cf6f5fd317f73a",
+        "android_client_info": {
+          "package_name": "com.example.social_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsP7DRkjvSfl9lpPKDBgEdkoD5KvntDj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
