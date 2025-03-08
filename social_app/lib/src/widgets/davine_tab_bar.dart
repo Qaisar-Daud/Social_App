@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:social_app/src/providers/theme_provider.dart';
 
 import '../helpers/constants.dart';
 
@@ -26,18 +28,13 @@ class DavineTabBar extends StatelessWidget {
     // Get the screen width to use for responsive padding and sizing.
     final double sw = MediaQuery.sizeOf(context).width;
 
-    return Expanded(
-      // The Expanded widget makes the DavineTabBar take up the remaining space in its parent widget.
-      child: Column(
-        // The Column widget arranges its children (TabBar and TabBarView) vertically.
-        children: [
-          Container(
-            height: sw * 0.09,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(sw * 0.1),
-              color: AppColors.containerdarkmode,
-            ),
-            child: TabBar(
+    return Consumer<ThemeProvider>(builder: (context, value, child) {
+      return Expanded(
+        // The Expanded widget makes the DavineTabBar take up the remaining space in its parent widget.
+        child: Column(
+          // The Column widget arranges its children (TabBar and TabBarView) vertically.
+          children: [
+            TabBar(
               // The controller that manages the state of the TabBar.
               controller: tabController,
               // The color of the divider between tabs.
@@ -58,38 +55,38 @@ class DavineTabBar extends StatelessWidget {
               ),
               // Style for the tab labels.
               labelStyle: TextStyle(
-                fontFamily: 'Serif',
-                fontSize: sw * 0.03,
-                color: AppColors.white
+                  fontFamily: 'Serif',
+                  fontSize: sw * 0.03,
+                  color: AppColors.white
               ),
               // Overlay color for the tab's splash effect.
               overlayColor: WidgetStatePropertyAll(AppColors.white),
               // Size of the tab indicator.
               indicatorSize: TabBarIndicatorSize.tab,
               // Color of the unselected tab labels.
-              unselectedLabelColor: AppColors.white,
+              unselectedLabelColor: value.themeMode == ThemeMode.light ? AppColors.black : AppColors.white,
               // Style for the unselected tab labels.
               unselectedLabelStyle: TextStyle(
                   fontFamily: 'Serif',
                   fontSize: sw * 0.038,
-                  color: AppColors.white,
+                  color: AppColors.black,
                   fontWeight: FontWeight.bold),
               // Color of the selected tab labels.
               labelColor: AppColors.white,
               // Decoration for the tab indicator.
               indicator: BoxDecoration(
-                color: AppColors.teal,
+                color: value.themeMode == ThemeMode.light ? AppColors.teal : AppColors.containerdarkmode,
                 borderRadius: BorderRadius.circular(sw * 0.1),
               ),
               // List of widgets representing the tabs.
               tabs: tabsName,
             ),
-          ),
-          Expanded(
+            Expanded(
               // The TabBarView widget displays the content of each tab.
-              child: TabBarView(controller: tabController, children: tabScreens))
-        ],
-      ),
-    );
+                child: TabBarView(controller: tabController, children: tabScreens)),
+          ],
+        ),
+      );
+    },);
   }
 }

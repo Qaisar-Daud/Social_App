@@ -15,7 +15,7 @@ import '../../views/chat_screen/main_chats_screen.dart';
 import '../../views/main_screen.dart';
 import '../../views/other_screens/onboarding.dart';
 import '../../views/other_screens/splash.dart';
-import '../../widgets/custom_text.dart';
+import '../../widgets/custom_txt.dart';
 
 class Routes {
 
@@ -40,7 +40,10 @@ class Routes {
         );
       case RouteNames.forgetPasswordScreen:
         return MaterialPageRoute(
-          builder: (context) => const ForgotPasswordScreen(),
+          builder: (context) {
+            final args = settings.arguments as String;
+            return ForgotPasswordScreen(text: args,);
+          },
         );
       case RouteNames.mainScreen:
         return MaterialPageRoute(

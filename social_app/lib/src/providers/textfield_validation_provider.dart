@@ -6,10 +6,14 @@ class FormProvider with ChangeNotifier {
   final GlobalKey<FormState> signUpFormKey = GlobalKey<FormState>();
   final GlobalKey<FormState> signInFormKey = GlobalKey<FormState>();
   final GlobalKey<FormState> forgetPasswordFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> resetPasswordFormKey = GlobalKey<FormState>();
 
   String _name = '';
   String _email = '';
   String _password = '';
+  String _newPassword = '';
+  String _newConfirmPassword = '';
+
   final String _dateOfBirth = '';
 
   String get name => _name;
@@ -17,6 +21,8 @@ class FormProvider with ChangeNotifier {
   String get email => _email;
 
   String get password => _password;
+  String get newPassword => _newPassword;
+  String get newConfirmPassword => _newConfirmPassword;
 
   String get dateOfBirth => _dateOfBirth;
 
@@ -35,11 +41,17 @@ class FormProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // void setDateOfBirth(String value) {
-  //   _dateOfBirth = value;
-  //   notifyListeners();
-  // }
+  void setNewPassword(String value) {
+    _newPassword = value;
+    notifyListeners();
+  }
 
+  void setNewConfirmPassword(String value) {
+    _newConfirmPassword = value;
+    notifyListeners();
+  }
+
+  // SignUp Form
   bool signupValidateForm() {
     final isValid = signUpFormKey.currentState?.validate() ?? false;
     if (isValid) {
@@ -49,6 +61,7 @@ class FormProvider with ChangeNotifier {
     return isValid;
   }
 
+  // SignIn Form
   bool signInValidateForm() {
     final isValid = signInFormKey.currentState?.validate() ?? false;
     if (isValid) {
@@ -58,6 +71,7 @@ class FormProvider with ChangeNotifier {
     return isValid;
   }
 
+  // Forget Password Form
   bool forgetPasswordValidateForm() {
     final isValid = forgetPasswordFormKey.currentState?.validate() ?? false;
     if (isValid) {
@@ -66,4 +80,15 @@ class FormProvider with ChangeNotifier {
     }
     return isValid;
   }
+
+  // Reset Password Form
+  bool resetPasswordValidateForm() {
+    final isValid = resetPasswordFormKey.currentState?.validate() ?? false;
+    if (isValid) {
+      resetPasswordFormKey.currentState?.save();
+      notifyListeners();
+    }
+    return isValid;
+  }
+
 }

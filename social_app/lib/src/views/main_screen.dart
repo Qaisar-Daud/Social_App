@@ -3,8 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
+import 'package:social_app/src/providers/theme_provider.dart';
+import 'package:social_app/src/utils/routes/routes_name.dart';
+import '../firebase/current_user_info.dart';
 import '../helpers/constants.dart';
 import '../providers/bottom_nav_provider.dart';
+import '../widgets/custom_txt.dart';
 
 class MainScreen extends StatefulWidget {
 
@@ -21,13 +25,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   void initState() {
-    super.initState();
+    currentUserNameId();
     // This will implement state into this class (Search Page)
     WidgetsBinding.instance.addObserver(this);
-
     // When User Open The App
     updateUserStatus('Online');
-
     super.initState();
   }
 
@@ -62,17 +64,34 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     return Consumer<BottomNavProvider>(
       builder: (context, navigateValue, child) {
         return Scaffold(
-            body: navigateValue.screen,
-            bottomNavigationBar: Consumer<BottomNavProvider>(
-              builder: (context, visibilityProvider, child) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  child: visibilityProvider.isVisible
-                      ? BottomBar(providerValue: navigateValue)
-                      : SizedBox.shrink(),
-                );
+          appBar: AppBar(
+            title: InkWell(
+              onTap: () {
+                Navigator.pushNamed(context, RouteNames.mainProfileScreen);
               },
+              child: Row(
+                children: [
+                  // Background Image
+                  CircleAvatar(
+                    radius: sw * 0.06,
+                    onBackgroundImageError: (exception, stackTrace) {
+                      Icon(Icons.broken_image);
+                    },
+                    backgroundImage: NetworkImage("${user!.photoURL}",),),
+                  10.width,
+                  // User Name
+                  CustomText(txt: '${user!.displayName}', fontSize: sw * 0.04,)
+                ],
+              ),
             ),
+            actions: [
+              IconButton(onPressed: () {
+                
+              }, icon: Icon(Icons.notifications, size: sw * 0.07,))
+            ],
+          ),
+            body: navigateValue.screen,
+          bottomNavigationBar: BottomBar(providerValue: navigateValue),
         );
       },
     );
@@ -80,7 +99,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 }
 
 class BottomBar extends StatelessWidget {
-  final providerValue;
+  final BottomNavProvider providerValue;
 
   const BottomBar({super.key, required this.providerValue});
 
@@ -89,56 +108,45 @@ class BottomBar extends StatelessWidget {
     final double sw = MediaQuery.sizeOf(context).width;
 
     Map<String, IconData> icons = {
-      'home': Icons.home,
       'search': Icons.search,
+      'home': Icons.home,
       'create post': Icons.post_add,
-      'notification': Icons.notifications,
-      'profile': Icons.account_circle,
     };
 
-    return Card(
-      clipBehavior: Clip.hardEdge,
-      margin: EdgeInsets.symmetric(horizontal: sw * 0.05, vertical: sw * 0.02),
-      child: BottomNavigationBar(
-        iconSize: sw * 0.05,
-        showUnselectedLabels: false,
-        showSelectedLabels: false,
-        currentIndex: providerValue.selectedIndex,
-        onTap: (value) {
-          providerValue.newIndex = value;
-        },
-        items: List.generate(
-          icons.length,
-              (index) {
-            String name = icons.keys.elementAt(index);
-            IconData icon = icons.values.elementAt(index);
-
-            return BottomNavigationBarItem(
-              backgroundColor: AppColors.teal,
-              activeIcon: Container(
-                padding: EdgeInsets.symmetric(
-                    horizontal: sw * 0.05, vertical: sw * 0.014),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(sw * 0.04),
-                  color: AppColors.liteWhite,
-                ),
-                child: Icon(
-                  icon,
-                  color: AppColors.grey,
-                  size: sw * 0.052,
-                ),
-              ),
-              icon: Icon(
-                icon,
-                color: AppColors.white,
-                size: sw * 0.066,
-              ),
-              label: name,
-              tooltip: 'Navigators',
-            );
+    return Consumer<ThemeProvider>(builder: (context, themeValue, child) {
+      return Consumer<BottomNavProvider>(
+      builder: (context, switchValue, child) {
+        return (switchValue.isVisible)
+            ?
+        BottomNavigationBar(
+          iconSize: sw * 0.055,
+          currentIndex: providerValue.selectedIndex,
+          onTap: (value) {
+            providerValue.newIndex = value;
           },
-        ),
-      ),
+          items: List.generate(
+            icons.length,
+                (index) {
+              String name = icons.keys.elementAt(index);
+              IconData icon = icons.values.elementAt(index);
+
+              return BottomNavigationBarItem(
+                activeIcon: Container(
+                  padding: EdgeInsets.symmetric(horizontal: sw * 0.08, vertical: sw * 0.014),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(sw * 0.1), color: themeValue.themeMode == ThemeMode.light ? AppColors.teal : AppColors.containerdarkmode,),
+                  child: Icon(icon),
+                ),
+                icon: Icon(icon),
+                label: name,
+                tooltip: 'Navigators',
+              );
+            },
+          ),
+        )
+            :
+        SizedBox.shrink();
+      },
     );
+    },);
   }
 }

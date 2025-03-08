@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,8 +17,7 @@ class ChatroomScreen extends StatefulWidget {
   final String chatRoomId;
   final QueryDocumentSnapshot<Map<String, dynamic>> otherUserMap;
 
-  const ChatroomScreen(
-      {super.key, required this.chatRoomId, required this.otherUserMap});
+  const ChatroomScreen({super.key, required this.chatRoomId, required this.otherUserMap});
 
   @override
   State<ChatroomScreen> createState() => _ChatroomScreenState();

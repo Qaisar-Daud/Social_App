@@ -11,7 +11,7 @@ import '../views/main_screen.dart';
 
 class BottomNavProvider extends ChangeNotifier {
 
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
 
   int get selectedIndex => _selectedIndex;
 
@@ -30,23 +30,13 @@ class BottomNavProvider extends ChangeNotifier {
 
     switch (index) {
       case 0:
-        _screen = const HomeScreen();
-        // notifyListeners();
-      case 1:
         _screen = const SearchScreen();
-        // notifyListeners();
+      case 1:
+        _screen = const HomeScreen();
       case 2:
         _screen = const CreatePostScreen();
-        // notifyListeners();
       case 3:
-        _screen = const NotificationScreen();
-        // notifyListeners();
-      case 4:
-        _screen = const ProfileMainScreen();
-        // notifyListeners();
-      case 5:
         _screen = const MainChatsScreen();
-        // notifyListeners();
       default:
         return MainScreen();
     }

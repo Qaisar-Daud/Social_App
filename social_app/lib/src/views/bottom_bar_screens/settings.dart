@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/custom_text.dart';
+import '../../widgets/custom_txt.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

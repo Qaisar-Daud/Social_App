@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
-import 'package:social_app/src/views/auth_screens/reset_password.dart';
 import '../../helpers/constants.dart';
 import '../../helpers/form_validators.dart';
 import '../../providers/textfield_validation_provider.dart';
@@ -10,81 +10,58 @@ import '../../widgets/custom_btn.dart';
 import '../../widgets/custom_txt.dart';
 import '../../widgets/custom_txt_field.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  String? text;
-  ForgotPasswordScreen({super.key, this.text});
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+
+  const ResetPasswordScreen({super.key, required this.email});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool isLoading = false;
+
+  bool toHide1 = true;
+  bool toHide2 = true;
 
   FirebaseAuth auth = FirebaseAuth.instance;
 
-  // Form Provider Validate Forget Password Form
   final FormProvider formKey = FormProvider();
 
-  TextEditingController emailController = TextEditingController();
+  TextEditingController newPasswordController = TextEditingController();
+  TextEditingController confirmPasswordController = TextEditingController();
 
-  // Password Reset Request:
-  // Below method is used to sent password reset request on firebase and then
-  // server feedback a reset link to client
-  request(String email) async{
-    try{
-      // If User Forgot Then Below Will Run
-      if(widget.text == ''){
-        await auth.sendPasswordResetEmail(email: email).then((value) {
-          setState(() {
+  resetPassword(String email, String newPassword) async {
+    try {
+      User? user = auth.currentUser;
+
+      if (user != null) {
+
+        await user.updatePassword(newPassword).then((_) async {
+
+          await FirebaseFirestore.instance.collection("Users").doc(user.uid).update({
+            'password': newPassword,
+          }).whenComplete(() {
             isLoading = false;
-            showSnackBar('Your Request Sent Successfully\nPlease Wait Here...');
-          });
-        },).onError((error, stackTrace) {
-          showSnackBar("$error");
-        },);
-      } else{
-        // If User Want To Update Then This Will Run
-        emailVerifying(email);
-      }
-    } catch (er){
-      showSnackBar("$er");
-    }
-  }
-
-  emailVerifying(String email) async {
-
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-
-    DocumentSnapshot<Map<String, dynamic>> userMap = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
-
-    try{
-
-      if(email == userMap['email']){
-
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ResetPasswordScreen(email: email),));
-
-      } else{
-          Future.delayed(Duration(seconds: 2)).then((value) {
-            setState(() {
-            showSnackBar('Your Email Not Match With Your Created Account Email Please Check Your Email Again Thank You');
-            isLoading = false;
-            });
+            showSnackBar('Password reset successfully');
+            Navigator.pop(context); // Navigate back after successful reset
+            setState(() {});
           },);
+        }).catchError((error) {
+          showSnackBar("Error: $error");
+        });
       }
-
-    } catch (er){
-      showSnackBar("$er");
+    } catch (er) {
+      showSnackBar("Exception: $er");
+    } finally{
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final double sw = MediaQuery.sizeOf(context).width;
-
-
-    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${widget.text}');
 
     return SafeArea(
       top: true,
@@ -98,48 +75,72 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: sw * 0.05),
                 child: Form(
-                  key: formKey.forgetPasswordFormKey,
+                  key: formKey.resetPasswordFormKey,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       100.height,
                       headDesign(sw),
                       40.height,
-                      // Random Txt
                       CustomText(
-                        txt: (widget.text == '') ?  'Forgot Password' : 'Update Password',
+                        txt: 'Reset Password',
                         fontSize: sw * 0.04,
                         fontFamily: 'Serif',
                       ),
                       40.height,
-                      // Important Note about Email
-                      CustomText(
-                          txt:
-                              'Note: Enter your email address. You will soon receive a link to create a new password via email.',
-                          fontSize: sw * 0.03,
-                          fontFamily: 'Serif',
-                          fontColor: AppColors.red),
-                      30.height,
-                      // Email Field
                       CustomTxtField(
-                        iconData: Icons.email,
-                        hintTxt: 'Enter Here Email Address',
-                        toHide: false,
-                        keyboardType: TextInputType.emailAddress,
-                        textController: emailController,
-                        fieldValidator: Validator.validateEmail,
-                        onChange: formKey.setEmail,
+                        iconData: Icons.key,
+                        hintTxt: 'Enter New Password',
+                        toHide: toHide1,
+                        keyboardType: TextInputType.text,
+                        textController: newPasswordController,
+                        fieldValidator: Validator.validatePassword,
+                        onChange: formKey.setNewPassword,
+                        suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() => toHide1 = !toHide1);
+                            },
+                            icon: Icon(
+                              toHide1 == true
+                                  ? CupertinoIcons.eye
+                                  : CupertinoIcons.eye_slash,
+                              size: sw * 0.05,
+                            )),
+                      ),
+                      20.height,
+                      CustomTxtField(
+                        iconData: Icons.key,
+                        hintTxt: 'Confirm New Password',
+                        toHide: toHide2,
+                        keyboardType: TextInputType.text,
+                        textController: confirmPasswordController,
+                        fieldValidator: (value) {
+                          if (value != newPasswordController.text) {
+                            return 'Passwords do not match';
+                          }
+                          return null;
+                        },
+                        onChange: formKey.setNewConfirmPassword,
+                        suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() => toHide2 = !toHide2);
+                            },
+                            icon: Icon(
+                              toHide2 == true
+                                  ? CupertinoIcons.eye
+                                  : CupertinoIcons.eye_slash,
+                              size: sw * 0.05,
+                            )),
                       ),
                       60.height,
-                      // Send Email Button
                       CustomPrimaryBtn(
                         onTap: () {
-                          if(formKey.forgetPasswordValidateForm()){
+                          if (formKey.resetPasswordValidateForm()) {
+                            resetPassword(widget.email, newPasswordController.text);
                             setState(() => isLoading = true);
-                            request(emailController.text);
                           }
                         },
-                        txt: 'Send',
+                        txt: 'Reset',
                         btnWidth: sw * 0.5,
                         btnHeight: sw * 0.1,
                       ),
@@ -176,7 +177,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  /// Helper function to show a SnackBar
   void showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

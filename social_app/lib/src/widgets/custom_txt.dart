@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:social_app/src/helpers/constants.dart';
+import 'package:social_app/src/providers/theme_provider.dart';
 
 class CustomText extends StatelessWidget {
   final String txt;
@@ -15,12 +18,14 @@ class CustomText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      txt,
-      style: TextStyle(
-        fontSize: fontSize,
-        fontFamily: fontFamily,
-        color: fontColor,
+    return Consumer<ThemeProvider>(
+      builder: (context, value, child) => Text(
+        txt,
+        style: TextStyle(
+          fontSize: fontSize ,
+          fontFamily: fontFamily,
+          color: value.themeMode == ThemeMode.light ? AppColors.black : AppColors.white,
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/providers/comment_provider.dart';
+import 'package:social_app/src/providers/data_search_provider.dart';
 import 'package:social_app/src/providers/isloading_provider.dart';
 import 'package:social_app/src/providers/bottom_nav_provider.dart';
 import 'package:social_app/src/providers/post_provider.dart';
@@ -34,6 +35,8 @@ class MyApp extends StatelessWidget {
             create: (_) => IsLoadingProvider()),
         // Form Validator Provider
         ChangeNotifierProvider<FormProvider>(create: (_) => FormProvider()),
+        // Data Search Provider
+        ChangeNotifierProvider<SearchProvider>(create: (_) => SearchProvider()),
       ],
       // 🎨 Apply Theme
       child: Consumer<ThemeProvider>(

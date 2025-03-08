@@ -34,8 +34,7 @@ class MainChatsScreen extends StatelessWidget {
 
       String user1 = currentUser['userId'];
 
-      if (user1[0].toLowerCase().codeUnits[0] >
-          user2[0].toLowerCase().codeUnits[0]) {
+      if (user1[0].toLowerCase().codeUnits[0] > user2[0].toLowerCase().codeUnits[0]) {
         return "$user1$user2";
       } else {
         return "$user2$user1";
@@ -102,24 +101,21 @@ class MainChatsScreen extends StatelessWidget {
                                   // This a map which will required for chat with current user,
                                   // we can get different field data of other user, from this map
 
-                                  QueryDocumentSnapshot<Map<String, dynamic>>
-                                      otherUserMap = snapshot.data!.docs[index];
+                                  QueryDocumentSnapshot<Map<String, dynamic>> otherUserMap = snapshot.data!.docs[index];
 
                                   // ***********************[Other User Name Id]************************************
                                   // Other Users => Random App User
-                                  String otherUserNameId =
-                                      await otherUserMap['userId'];
+                                  String otherUserNameId = await otherUserMap['userId'];
                                   // Chat Room ID will create when current user want's to chat with someone
-                                  String roomId =
-                                      await chatRoomID(otherUserNameId);
+                                  String roomId = await chatRoomID(otherUserNameId);
 
-                                  Navigator.push(context, MaterialPageRoute(
-                                    builder: (context) {
-                                      return ChatroomScreen(
-                                          chatRoomId: roomId,
-                                          otherUserMap: otherUserMap);
-                                    },
-                                  ));
+                                  if(roomId.isNotEmpty){
+                                    Navigator.push(context, MaterialPageRoute(
+                                      builder: (context) => ChatroomScreen(chatRoomId: roomId, otherUserMap: otherUserMap),
+                                    ));
+                                  } else {
+                                    print('error');
+                                  }
                                 },
                                 leading: Container(
                                   width: sw * 0.15,

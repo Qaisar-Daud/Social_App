@@ -16,7 +16,7 @@ import '../../myapp.dart';
 import '../../providers/textfield_validation_provider.dart';
 import '../../utils/routes/routes_name.dart';
 import '../../widgets/custom_btn.dart';
-import '../../widgets/custom_text.dart';
+import '../../widgets/custom_txt.dart';
 import '../../widgets/custom_txt_field.dart';
 import '../../widgets/date_time_picker.dart';
 

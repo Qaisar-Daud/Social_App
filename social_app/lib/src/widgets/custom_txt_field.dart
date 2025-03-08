@@ -34,12 +34,18 @@ class CustomTxtField extends StatelessWidget {
       textInputAction: TextInputAction.next,
       controller: textController,
       validator: fieldValidator,
+      obscuringCharacter: "*",
       style: TextStyle(
         fontFamily: 'Poppins',
         color: AppColors.black.withOpacity(0.7),
         fontSize: sw * 0.04,
       ),
       decoration: InputDecoration(
+        errorStyle: TextStyle(fontSize: sw * 0.028, fontFamily: 'Poppins'),
+        errorMaxLines: 2,
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(width: 0.1),
+        ),
         label: Icon(
           iconData,
           size: sw * 0.06,

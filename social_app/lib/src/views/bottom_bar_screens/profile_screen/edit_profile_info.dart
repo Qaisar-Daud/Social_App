@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:social_app/src/myapp.dart';
+import 'package:social_app/src/utils/routes/routes_name.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../helpers/constants.dart';
@@ -29,6 +30,17 @@ class EditUserProfileInfo extends StatefulWidget {
 }
 
 class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
+
+  late Map<String, dynamic> preUserData;
+
+  @override
+  void initState() {
+    super.initState();
+    preUserData = widget.userMap;
+  }
+
+
+
   bool isLoading = false;
 
   FirebaseAuth auth = FirebaseAuth.instance;
@@ -260,6 +272,21 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
                     },
                     onChange: (p0) {},
                   ),
+                  20.height,
+                  // Important Note
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                          width: sw * 0.5,
+                          child: CustomText(txt: 'You can update your password for security reason, strong password etc...', fontSize: sw * 0.03, fontColor: AppColors.blue,)),
+                      // Password Update Button
+                      CustomTxtBtn(onTap: () {
+                        Navigator.pushNamed(context, RouteNames.forgetPasswordScreen, arguments: 'Update');
+                      }, txt: 'Update Password', btnSize: sw * 0.03, btnColor: AppColors.green,),
+                    ],
+                  ),
                   100.height,
                   // Confirm Button
                   Align(
@@ -269,13 +296,10 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
                           if (imgFile != null) {
                             uploadOnFirebase(imgFile!);
                           } else {
-                            updateUserInfo(
-                                newImgUrl: widget.userMap['imgUrl'],
-                                newName: widget.userMap['name'],
-                                newBio: widget.userMap['bio']);
+                            updateUserInfo(newImgUrl: widget.userMap['imgUrl'], newName: widget.userMap['name'], newBio: widget.userMap['bio']);
                           }
                         },
-                        txt: 'Confirm',
+                        txt:'Confirm',
                         btnWidth: sw * 0.5,
                         btnHeight: sw * 0.12),
                   ),

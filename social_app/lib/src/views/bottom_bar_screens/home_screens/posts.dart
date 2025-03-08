@@ -57,8 +57,7 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
   }
 
 
-  final Stream<QuerySnapshot> postsStream =
-      FirebaseFirestore.instance.collectionGroup('Post').snapshots();
+  final Stream<QuerySnapshot> postsStream = FirebaseFirestore.instance.collectionGroup('Post').snapshots();
 
   Future<void> likePost(DocumentSnapshot postDoc, String currentUserId) async {
     // Get the document reference
@@ -93,221 +92,196 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
           _onScroll();
           return true;
         },
-        child: Column(
-          children: [
-            04.height,
-            const Divider(),
-            // Posts
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                  stream: postsStream,
-                  builder: (context, snapshot) {
-                    try {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return buildShimmerLoader();
-                      } else if (snapshot.connectionState == ConnectionState.active) {
-                        if (snapshot.hasError) {
-                          debugPrint(snapshot.hasError.toString());
-                        } else if (snapshot.data!.docs.isEmpty) {
-                          return const Center(child: Text('No Data Found!'));
-                        } else if (snapshot.hasData) {
-                          final data = snapshot.data!.docs;
-                          return ListView.builder(
-                            itemCount: data.length,
-                            controller: _scrollController,
-                            itemBuilder: (context, index) {
-                              final postId = data[index].id;
-                              final postText = data[index]['postText'];
-                              final postProvider = Provider.of<PostProvider>(context);
-                              postProvider.initializePost(postId);
-                              bool isExpanded = postProvider.isExpanded(postId);
+        child: StreamBuilder<QuerySnapshot>(
+            stream: postsStream,
+            builder: (context, snapshot) {
+              try {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return buildShimmerLoader();
+                } else if (snapshot.connectionState == ConnectionState.active) {
+                  if (snapshot.hasError) {
+                    debugPrint(snapshot.hasError.toString());
+                  } else if (snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No Data Found!'));
+                  } else if (snapshot.hasData) {
+                    final data = snapshot.data!.docs;
+                    return ListView.builder(
+                      itemCount: data.length,
+                      controller: _scrollController,
+                      itemBuilder: (context, index) {
+                        final postId = data[index].id;
+                        final postText = data[index]['postText'];
+                        final postProvider = Provider.of<PostProvider>(context);
+                        postProvider.initializePost(postId);
+                        bool isExpanded = postProvider.isExpanded(postId);
 
-                              return Card(
-                                margin: EdgeInsets.only(top: sw * 0.04),
-                                child: Column(
-                                  children: [
-                                    // User Information
-                                    ListTile(
-                                      isThreeLine: true,
-                                      contentPadding: EdgeInsets.only(
-                                        top: sw * 0.02,
-                                        left: sw * 0.04,
-                                      ),
-                                      horizontalTitleGap: sw * 0.02,
-                                      minVerticalPadding: sw * 0.02,
-                                      minLeadingWidth: sw * 0.16,
-                                      minTileHeight: sw * 0.2,
-                                      titleAlignment: ListTileTitleAlignment.threeLine,
-                                      titleTextStyle: TextStyle(
-                                          fontSize: sw * 0.034, color: AppColors.black),
-                                      subtitleTextStyle: TextStyle(
-                                          fontSize: sw * 0.022, color: AppColors.black),
-                                      leading: Container(
-                                          width: sw * 0.14,
-                                          height: sw * 0.14,
-                                          clipBehavior: Clip.hardEdge,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: AppColors.aqua,
-                                          ),
-                                          child: Image.network(
-                                            (data[index]['userProfilePic'] == null)
-                                                ? data[index]['userProfilePic']
-                                                : defaultProfile,
-                                            fit: BoxFit.cover,
-                                          )),
-                                      title: Text(data[index]['userName']),
-                                      subtitle: Text(data[index]['userId']),
-                                      trailing: PopupMenuButton(
-                                        tooltip: 'Add Media',
-                                        popUpAnimationStyle: AnimationStyle(
-                                            duration: const Duration(seconds: 1),
-                                            reverseDuration:
-                                            const Duration(milliseconds: 200)),
-                                        itemBuilder: (context) => [
-                                          // Pick Image From Gallery
-                                          PopupMenuItem(
-                                              onTap: () {},
-                                              height: sw * 0.06,
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal: sw * 0.02,
-                                                  vertical: sw * 0.01),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  CustomText(
-                                                    txt: 'Public',
-                                                    fontSize: sw * 0.036,
-                                                  ),
-                                                  Icon(
-                                                    Icons.public,
-                                                    size: sw * 0.05,
-                                                  ),
-                                                ],
-                                              )),
-                                          // Pick Video From Gallery
-                                          PopupMenuItem(
-                                            onTap: () {},
-                                            height: sw * 0.06,
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: sw * 0.02,
-                                                vertical: sw * 0.01),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                CustomText(
-                                                  txt: 'Private',
-                                                  fontSize: sw * 0.036,
-                                                ),
-                                                Icon(
-                                                  Icons.lock_person_outlined,
-                                                  size: sw * 0.05,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                        return Card(
+                          margin: EdgeInsets.only(top: sw * 0.04),
+                          child: Column(
+                            children: [
+                              // User Information
+                              ListTile(
+                                isThreeLine: true,
+                                contentPadding: EdgeInsets.only(
+                                  top: sw * 0.02,
+                                  left: sw * 0.04,
+                                ),
+                                horizontalTitleGap: sw * 0.02,
+                                minVerticalPadding: sw * 0.02,
+                                minLeadingWidth: sw * 0.16,
+                                minTileHeight: sw * 0.2,
+                                titleAlignment: ListTileTitleAlignment.threeLine,
+                                leading: Container(
+                                    width: sw * 0.14,
+                                    height: sw * 0.14,
+                                    clipBehavior: Clip.hardEdge,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.aqua,
                                     ),
-                                    // Post Content with "See More" functionality
-                                    Padding(
-                                      padding: EdgeInsets.only(left: sw * 0.04, right: sw * 0.04, bottom: sw * 0.04),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          if (postText != null && postText.isNotEmpty)
-                                            Text(
-                                              postText,
-                                              maxLines: isExpanded ? null : 10,
-                                              overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-                                              style: TextStyle(fontSize: sw * 0.03),
+                                    child: Image.network(
+                                      (data[index]['userProfilePic'] == null)
+                                          ? data[index]['userProfilePic']
+                                          : defaultProfile,
+                                      fit: BoxFit.cover,
+                                    )),
+                                title: CustomText(txt: data[index]['userName'], fontSize: sw * 0.034,),
+                                subtitle: CustomText(txt: data[index]['userId'], fontSize: sw * 0.022,),
+                                trailing: PopupMenuButton(
+                                  tooltip: 'Other Actions',
+                                  popUpAnimationStyle: AnimationStyle(
+                                      duration: const Duration(seconds: 1),
+                                      reverseDuration:
+                                      const Duration(milliseconds: 200)),
+                                  itemBuilder: (context) => [
+                                    // Save The Post
+                                    PopupMenuItem(
+                                        onTap: () {},
+                                        height: sw * 0.06,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: sw * 0.02,
+                                            vertical: sw * 0.01),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            CustomText(
+                                              txt: 'Save',
+                                              fontSize: sw * 0.036,
                                             ),
-                                          if (postText != null && postText.split('\n').length > 10)
-                                            Align(
-                                              alignment: Alignment.topRight,
-                                              child: TextButton(
-                                                onPressed: () => postProvider.toggleExpand(postId),
-                                                child: Text(isExpanded ? "See Less" : "See More", style: TextStyle(fontSize: sw * 0.03),),
-                                              ),
+                                            Icon(
+                                              Icons.bookmark_add_outlined,
+                                              size: sw * 0.05,
                                             ),
-                                          10.height,
-                                          if (data[index]['postImages'] != null &&
-                                              (data[index]['postImages'] as List).isNotEmpty)
-                                            InkWell(
-                                              onTap: () {
-                                                showUploadedImage(data[index]['postImages'][0]);
-                                              },
-                                              child: SizedBox(
-                                                width: sw,
-                                                child: Image.network(
-                                                  data[index]['postImages'][0],
-                                                  fit: BoxFit.contain,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    // Post Reactions Functionality
-                                    Row(
-                                      children: [
-                                        // like button
-                                        IconButton(
-                                          onPressed: () async {
-                                            String uid =
-                                                FirebaseAuth.instance.currentUser!.uid;
-
-                                            DocumentSnapshot<Map<String, dynamic>>
-                                            currentUserData = await firestore
-                                                .collection('Users')
-                                                .doc(uid)
-                                                .get();
-
-                                            likePost(
-                                                data[index], currentUserData['userId']);
-                                          },
-                                          icon: const Icon(Icons.favorite_outline),
-                                          iconSize: sw * 0.06,
-                                        ),
-                                        // 2. comment button
-                                        Consumer<CommentProvider>(
-                                          builder: (context, provider, child) {
-                                            return IconButton(
-                                              icon: Icon(Icons.comment_outlined, size:  sw * 0.06),
-                                              onPressed: () async {},
-                                            );
-                                          },
-                                        ),
-                                        const Spacer(),
-                                        // share button
-                                        IconButton(
-                                          onPressed: () {},
-                                          icon: const Icon(Icons.share),
-                                          iconSize: sw * 0.06,
-                                        ),
-                                      ],
-                                    )
+                                          ],
+                                        )),
                                   ],
                                 ),
-                              );
-                            },
-                          );
-                        } else if (snapshot.connectionState == ConnectionState.none) {
-                          return const Center(child: Text('No Internet Connection,'));
-                        } else {
-                          return const Center(child: Text('No Data Found!'));
-                        }
-                      }
-                    } catch (er) {
-                      debugPrint("$er");
-                    }
-                    return buildShimmerLoader();
-                  }),
-            ),
-          ],
-        ),
+                              ),
+                              // Post Content with "See More" functionality
+                              Padding(
+                                padding: EdgeInsets.only(left: sw * 0.04, right: sw * 0.04, bottom: sw * 0.04),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (postText != null && postText.isNotEmpty)
+                                      // and also tap able if user want to see all content its not essential to pressed on see all or see less button
+                                      GestureDetector(
+                                        onTap: () {
+                                          if (postText != null && postText.split('\n').length > 10){
+                                            postProvider.toggleExpand(postId);
+                                          }
+                                        },
+                                        child: Text(
+                                          postText,
+                                          maxLines: isExpanded ? null : 10,
+                                          overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                                          style: TextStyle(fontSize: sw * 0.032),
+                                        ),
+                                      ),
+                                    10.height,
+                                    if (postText != null && postText.split('\n').length > 10)
+                                      Align(
+                                        alignment: Alignment.topRight,
+                                        child: TextButton(
+                                          onPressed: () => postProvider.toggleExpand(postId),
+                                          child: Text(isExpanded ? "See Less" : "See More", style: TextStyle(fontSize: sw * 0.03),),
+                                        ),
+                                      ),
+                                    10.height,
+                                    // Post Image If Exists
+                                    if (data[index]['postImages'] != null &&
+                                        (data[index]['postImages'] as List).isNotEmpty)
+                                      InkWell(
+                                        onTap: () {
+                                          showUploadedImage(data[index]['postImages'][0]);
+                                        },
+                                        child: SizedBox(
+                                          width: sw,
+                                          child: Image.network(
+                                            data[index]['postImages'][0],
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              // Post Reactions Functionality
+                              Row(
+                                children: [
+                                  // like button
+                                  IconButton(
+                                    onPressed: () async {
+                                      String uid =
+                                          FirebaseAuth.instance.currentUser!.uid;
+
+                                      DocumentSnapshot<Map<String, dynamic>>
+                                      currentUserData = await firestore
+                                          .collection('Users')
+                                          .doc(uid)
+                                          .get();
+
+                                      likePost(
+                                          data[index], currentUserData['userId']);
+                                    },
+                                    icon: const Icon(Icons.favorite_outline),
+                                    iconSize: sw * 0.06,
+                                  ),
+                                  // 2. comment button
+                                  Consumer<CommentProvider>(
+                                    builder: (context, provider, child) {
+                                      return IconButton(
+                                        icon: Icon(Icons.comment_outlined, size:  sw * 0.06),
+                                        onPressed: () async {},
+                                      );
+                                    },
+                                  ),
+                                  const Spacer(),
+                                  // share button
+                                  IconButton(
+                                    onPressed: () {},
+                                    icon: const Icon(Icons.share),
+                                    iconSize: sw * 0.06,
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  } else if (snapshot.connectionState == ConnectionState.none) {
+                    return const Center(child: Text('No Internet Connection,'));
+                  } else {
+                    return const Center(child: Text('No Data Found!'));
+                  }
+                }
+              } catch (er) {
+                debugPrint("$er");
+              }
+              return buildShimmerLoader();
+            }),
       ),
     );
   }

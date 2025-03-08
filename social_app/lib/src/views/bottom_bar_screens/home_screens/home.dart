@@ -6,7 +6,7 @@ import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home_screens/posts.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home_screens/reels.dart';
 import '../../../helpers/constants.dart';
-import '../../../widgets/custom_text.dart';
+import '../../../widgets/custom_txt.dart';
 import '../../../widgets/davine_tab_bar.dart';
 
 // Home Screen with Theme Switch Button
@@ -17,8 +17,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -53,27 +52,9 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Divider(),
-              01.height,
-              // Search Bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SizedBox(
-                      height: sw * 0.13,
-                      width: sw * 0.78,
-                      child: SearchBar()),
-                  IconButton(onPressed: () {
-                    
-                  }, icon: Icon(Icons.notifications, size: sw * 0.06,))
-                ],
-              ),
-              10.height,
-              Divider(),
-              01.height,
               // User, Friends Stories Or Followers
               SizedBox(
-                height: sw * 0.28,
+                height: sw * 0.24,
                 child: StreamBuilder(
                   stream: firestore.collection('Users').snapshots(),
                   builder: (context, snapshot) {
@@ -97,8 +78,7 @@ class _HomeScreenState extends State<HomeScreen>
                       } else if (snapshot.hasError) {
                         return const CustomText(txt: 'No Followers Found');
                       }
-                    } else if (snapshot.connectionState ==
-                        ConnectionState.waiting) {
+                    } else if (snapshot.connectionState == ConnectionState.waiting) {
                       return Align(
                           alignment: Alignment.center,
                           child: SizedBox(

@@ -1,14 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:social_app/src/widgets/custom_text.dart';
+
+import '../../../widgets/custom_txt.dart';
 
 class OtherUsersInfo extends StatelessWidget {
-  const OtherUsersInfo({super.key});
+  final QueryDocumentSnapshot<Map<String, dynamic>> data;
+  const OtherUsersInfo({super.key,  required this.data});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: CustomText(txt: 'Other User Info Profile'),
+        child: CustomText(txt: 'Other User: ${data['fullName']}'),
       ),
     );
   }
