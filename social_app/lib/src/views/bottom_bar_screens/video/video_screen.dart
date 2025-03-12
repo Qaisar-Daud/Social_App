@@ -28,12 +28,15 @@ class _VideoScreenState extends State<VideoScreen> {
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
+  final int _fetchLimit = 50;
+  int _currentIndex = 0;
+  List<DocumentSnapshot> _allVideos = [];
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _fetchVideos();
+    _fetchAllVideos();
   }
 
   @override
@@ -44,31 +47,30 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent && !_isLoading) {
-      _fetchVideos();
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent && !_isLoading) {
+      _loadMoreVideos();
     }
   }
 
-  void _fetchVideos() async {
+  void _fetchAllVideos() async {
     if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
       _hasError = false;
       _videos.clear();
+      _allVideos.clear();
+      _currentIndex = 0;
     });
 
     try {
       final QuerySnapshot snapshot = await _videosCollection.get();
-      List<DocumentSnapshot> newVideos = snapshot.docs;
+      _allVideos = snapshot.docs;
 
       // 🎲 Randomly shuffle videos before displaying
-      newVideos.shuffle(Random());
+      _allVideos.shuffle(Random());
 
-      setState(() {
-        _videos.addAll(newVideos);
-      });
+      _loadMoreVideos();
     } catch (e) {
       setState(() {
         _hasError = true;
@@ -82,18 +84,30 @@ class _VideoScreenState extends State<VideoScreen> {
     }
   }
 
+  void _loadMoreVideos() {
+    if (_currentIndex >= _allVideos.length) return;
+
+    setState(() {
+      int endIndex = (_currentIndex + _fetchLimit).clamp(0, _allVideos.length);
+      _videos.addAll(_allVideos.sublist(_currentIndex, endIndex));
+      _currentIndex = endIndex;
+    });
+  }
+
   void _onRefresh() async {
-    _fetchVideos();
+    _fetchAllVideos();
   }
 
   void _onSearch() async {
     final query = _searchController.text.trim();
-    _fetchVideos();
+    _fetchAllVideos();
   }
 
   @override
   Widget build(BuildContext context) {
-    final double sw = MediaQuery.sizeOf(context).width;
+    final double sw = MediaQuery
+        .sizeOf(context)
+        .width;
 
     return Scaffold(
       body: Column(
@@ -119,7 +133,8 @@ class _VideoScreenState extends State<VideoScreen> {
                   size: sw * 0.07,
                   color: AppColors.grey.withAlpha(200),
                 ),
-                textStyle: WidgetStatePropertyAll(TextStyle(fontSize: sw * 0.04)),
+                textStyle: WidgetStatePropertyAll(
+                    TextStyle(fontSize: sw * 0.04)),
               ),
             ),
           ),
@@ -135,7 +150,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     style: const TextStyle(color: Colors.red),
                   ),
                   ElevatedButton(
-                    onPressed: () => _fetchVideos(),
+                    onPressed: () => _fetchAllVideos(),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -145,7 +160,7 @@ class _VideoScreenState extends State<VideoScreen> {
           // Data Values
           Expanded(
             child: Padding(
-              padding: EdgeInsets.all(8.0), // Move Padding inside Expanded
+              padding: EdgeInsets.all(8.0),
               child: SmartRefresher(
                 controller: _refreshController,
                 enablePullUp: true,
@@ -154,8 +169,16 @@ class _VideoScreenState extends State<VideoScreen> {
                     ? buildShimmerLoader()
                     : ListView.builder(
                   controller: _scrollController,
-                  itemCount: _videos.length,
+                  itemCount: _videos.length + 1,
                   itemBuilder: (context, index) {
+                    if (index == _videos.length) {
+                      return _currentIndex < _allVideos.length
+                          ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                          : SizedBox();
+                    }
                     final video = _videos[index];
                     return _buildVideoItem(video);
                   },
@@ -167,7 +190,7 @@ class _VideoScreenState extends State<VideoScreen> {
       ),
     );
   }
-  
+
   // Highlight matching text in search results
   Widget highlightText(String text, String query) {
     if (query.isEmpty) {
