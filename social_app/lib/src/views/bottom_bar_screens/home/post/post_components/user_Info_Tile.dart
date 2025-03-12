@@ -7,7 +7,6 @@ import 'package:social_app/src/views/bottom_bar_screens/home/post/post_component
 import '../../../../../helpers/constants.dart';
 import '../../../../../myapp.dart';
 import '../../../../../providers/post_provider.dart';
-import '../../../../../widgets/custom_txt.dart';
 
 // User Information and save post action
 Widget userInfoTile({
@@ -45,8 +44,8 @@ Widget userInfoTile({
             },
           ),
         ),
-        title: CustomText(txt: postMap['userName'], fontSize: sw * 0.034),
-        subtitle: CustomText(txt: postMap['userId'], fontSize: sw * 0.022),
+        title: Text(postMap['userName'], style: TextStyle(fontSize: sw * 0.034)),
+        subtitle: Text(postMap['userId'], style: TextStyle(fontSize: sw * 0.022)),
         trailing: moreActionForPost(sw: sw, menuButtons: menuItemButtons),
       );
     },

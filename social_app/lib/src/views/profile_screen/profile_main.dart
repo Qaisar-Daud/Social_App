@@ -38,37 +38,35 @@ class _ProfileMainScreenState extends State<ProfileMainScreen> with SingleTicker
     final double sw = MediaQuery.sizeOf(context).width;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-              left: sw * 0.04, right: sw * 0.04, top: sw * 0.04),
-          child: Column(
-            children: [
-              // Current User Profile Info and logout Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Current User Info
-                  userProfileInfo(sw),
-                  // Logout Button
-                  IconButton(
-                      onPressed: () {
-                        signOut();
-                      },
-                      icon: Icon(
-                        Icons.logout,
-                        color: Colors.red,
-                        size: sw * 0.06,
-                      )),
-                ],
-              ),
-              20.height,
-              // Here User's Follow, Following, and Post Count Info will show
-              followerInfo(sw),
-              20.height,
-              tabBarViews(sw),
-            ],
-          ),
+      body: Padding(
+        padding: EdgeInsets.only(
+            left: sw * 0.04, right: sw * 0.04, top: sw * 0.04),
+        child: Column(
+          children: [
+            // Current User Profile Info and logout Button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Current User Info
+                userProfileInfo(sw),
+                // Logout Button
+                IconButton(
+                    onPressed: () {
+                      signOut();
+                    },
+                    icon: Icon(
+                      Icons.logout,
+                      color: Colors.red,
+                      size: sw * 0.06,
+                    )),
+              ],
+            ),
+            20.height,
+            // Here User's Follow, Following, and Post Count Info will show
+            followerInfo(sw),
+            20.height,
+            tabBarViews(sw),
+          ],
         ),
       ),
     );

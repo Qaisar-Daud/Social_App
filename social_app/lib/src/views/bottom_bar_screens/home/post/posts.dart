@@ -2,13 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/more_action.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/post_content.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/post_reactions.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/user_Info_Tile.dart';
 import 'package:social_app/src/widgets/shimmer_loader.dart';
-import '../../../../helpers/constants.dart';
 import '../../../../providers/post_provider.dart';
 import '../comment_section.dart';
 
@@ -22,8 +20,6 @@ class PostsScreen extends StatefulWidget {
 class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // Try Code *********[ Start] *************************
-
   final Query<Object?> _postCollection = FirebaseFirestore.instance.collectionGroup('Post');
 
   final RefreshController _refreshController = RefreshController();
@@ -31,8 +27,6 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
 
   final List<DocumentSnapshot> _posts = [];
   bool _isLoading = false;
-  bool _hasError = false;
-  String _errorMessage = '';
   DocumentSnapshot? _lastDocument;
   bool _hasMore = true;
 
@@ -40,6 +34,9 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PostProvider>(context, listen: false).fetchPosts();
+    });
     _fetchPosts();
   }
 
@@ -52,10 +49,10 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
 
   void _onScroll() {
     if (_scrollController.position.pixels ==
-            _scrollController.position.maxScrollExtent &&
-        !_isLoading &&
-        _hasMore) {
-      _fetchPosts(loadMore: true);
+        _scrollController.position.maxScrollExtent &&
+        !Provider.of<PostProvider>(context).isLoading &&
+        Provider.of<PostProvider>(context).hasMore) {
+      Provider.of<PostProvider>(context, listen: false).fetchPosts(loadMore: true);
     }
   }
 
@@ -64,7 +61,6 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
 
     setState(() {
       _isLoading = true;
-      _hasError = false;
       if (!loadMore) {
         _posts.clear();
         _lastDocument = null;
@@ -94,8 +90,6 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       setState(() {
-        _hasError = true;
-        _errorMessage = e.toString();
       });
     } finally {
       setState(() {
@@ -123,17 +117,17 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
           return Column(
             children: [
               // Error Message
-              if (_hasError)
+              if (postProvider.hasError)
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
                     children: [
                       Text(
-                        _errorMessage,
+                        postProvider.errorMessage,
                         style: const TextStyle(color: Colors.red),
                       ),
                       ElevatedButton(
-                        onPressed: () => _fetchPosts(loadMore: true),
+                        onPressed: () => postProvider.fetchPosts(loadMore: true),
                         child: const Text('Retry'),
                       ),
                     ],

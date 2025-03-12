@@ -321,49 +321,59 @@ class PostProvider extends ChangeNotifier {
 
   /// *********************[Post => PreLoad Data Functionality]***********************
 
-  List<QueryDocumentSnapshot<Object?>> _posts = [];
-  bool _hasMore = true;
+  final List<DocumentSnapshot> _posts = [];
+  bool _hasError = false;
+  String _errorMessage = '';
   DocumentSnapshot? _lastDocument;
+  bool _hasMore = true;
 
-  List<QueryDocumentSnapshot<Object?>> get posts => _posts;
+  List<DocumentSnapshot> get posts => _posts;
   bool get isLoading => _isLoading;
+  bool get hasError => _hasError;
+  String get errorMessage => _errorMessage;
   bool get hasMore => _hasMore;
 
-  Future<void> fetchPosts({bool isInitialLoad = false}) async {
-    if (_isLoading || !_hasMore) return;
+  Future<void> fetchPosts({bool loadMore = false, String? searchQuery}) async {
+    if (_isLoading) return;
 
     _isLoading = true;
+    _hasError = false;
+    if (!loadMore) {
+      _posts.clear();
+      _lastDocument = null;
+      _hasMore = true;
+    }
     notifyListeners();
 
     try {
-      Query query = _firestore
-          .collectionGroup('Post')
-          .orderBy('timestamp', descending: true)
-          .limit(10);
-
-      if (!isInitialLoad && _lastDocument != null) {
+      Query query = _firestore.collectionGroup('Post').limit(10);
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.where('title', isGreaterThanOrEqualTo: searchQuery);
+      }
+      if (loadMore && _lastDocument != null) {
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        final posts = snapshot.docs.map((doc) => Post.fromMap(doc.data())).toList();
-        _posts.addAll(posts as Iterable<QueryDocumentSnapshot<Object?>>);
+      final QuerySnapshot snapshot = await query.get();
+      if (snapshot.docs.isEmpty) {
+        _hasMore = false;
+      } else {
+        _posts.addAll(snapshot.docs);
         _lastDocument = snapshot.docs.last;
-
-        // Cache posts
-        final box = Hive.box<Post>('posts');
-        box.addAll(posts as Iterable<Post>);
       }
-
-      _hasMore = snapshot.docs.length == 10;
     } catch (e) {
-      debugPrint('Error fetching posts: $e');
+      _hasError = true;
+      _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void clearError() {
+    _hasError = false;
+    _errorMessage = '';
+    notifyListeners();
   }
 
   void clearPosts() {
@@ -375,8 +385,6 @@ class PostProvider extends ChangeNotifier {
 
   Future<void> loadCachedPosts() async {
     final box = Hive.box<Post>('posts');
-    _posts = box.values.cast<QueryDocumentSnapshot<Object?>>().toList();
     notifyListeners();
   }
-
 }

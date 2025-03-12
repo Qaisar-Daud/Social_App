@@ -91,7 +91,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 // App Name
                 SizedBox(
                     width: sw * 0.48,
-                    child: CustomText(txt: 'Glintor', fontSize: sw * 0.05,))
+                    child: Text('Glintor', style: TextStyle(fontSize: sw * 0.05,)))
               ],
             ),
             actions: [

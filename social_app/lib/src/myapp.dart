@@ -40,14 +40,13 @@ class MyApp extends StatelessWidget {
         builder: (context, value, child) => MaterialApp(
           title: 'Glintor',
           // When 🎨 Theme Toggle
-          themeMode: value.themeMode,
+          themeMode: ThemeMode.system,
           // 🎨 Light Theme
           theme: AppThemes.lightTheme,
           // 🎨 Dark Theme
           darkTheme: AppThemes.darkTheme,
           initialRoute: RouteNames.splashScreen,
           onGenerateRoute: Routes.onGenerateRoute,
-          // home: SearchScreen(),
         ),
       ),
     );

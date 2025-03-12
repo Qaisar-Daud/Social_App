@@ -46,7 +46,7 @@ class DavineTabBar extends StatelessWidget {
               // Physics for the TabBar's scroll behavior.
               physics: const BouncingScrollPhysics(),
               // Automatically adjust the indicator color based on the tab's state.
-              automaticIndicatorColorAdjustment: true,
+              // automaticIndicatorColorAdjustment: true,
               // Height of the divider between tabs.
               dividerHeight: 0,
               // Thickness of the tab indicator.
@@ -60,10 +60,9 @@ class DavineTabBar extends StatelessWidget {
               labelStyle: TextStyle(
                   fontFamily: 'Serif',
                   fontSize: sw * 0.03,
-                  color: AppColors.white
               ),
               // Overlay color for the tab's splash effect.
-              overlayColor: WidgetStatePropertyAll(AppColors.white),
+              overlayColor: WidgetStatePropertyAll(AppColors.containerdarkmode),
               // Size of the tab indicator.
               indicatorSize: TabBarIndicatorSize.tab,
               // Color of the unselected tab labels.
@@ -72,7 +71,6 @@ class DavineTabBar extends StatelessWidget {
               unselectedLabelStyle: TextStyle(
                   fontFamily: 'Serif',
                   fontSize: sw * 0.038,
-                  color: AppColors.black,
                   fontWeight: FontWeight.bold),
               // Color of the selected tab labels.
               labelColor: AppColors.white,
