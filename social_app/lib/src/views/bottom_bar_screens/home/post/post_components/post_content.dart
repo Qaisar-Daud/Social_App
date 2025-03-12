@@ -2,7 +2,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:social_app/src/widgets/preview_full_image.dart';
 import '../../../../../providers/post_provider.dart';
 
@@ -14,7 +13,8 @@ Widget postContent(double sw, QueryDocumentSnapshot<Object?> postSnapshot) {
 
   return Consumer<PostProvider>(
     builder: (context, postProvider, child) {
-      String postId = postMap['postId'] ?? '';
+      String postId = postMap['postId'] ?? 'defaultPostId'; // Ensure postId is not null
+      postProvider.initializePost(postId); // Initialize postId in PostProvider
       bool isExpanded = postProvider.isExpanded(postId);
 
       String postText = postMap['postText'] ?? '';
@@ -64,7 +64,6 @@ Widget postContent(double sw, QueryDocumentSnapshot<Object?> postSnapshot) {
 
             SizedBox(height: 10),
 
-            // ✅ FIX: Only show image if postImages is not empty and contains a valid URL
             if (postImages.isNotEmpty && postImages[0] is String && postImages[0].toString().isNotEmpty)
               InkWell(
                 onTap: () => previewFullImage(context, postImages[0]),
@@ -96,7 +95,6 @@ Widget postContent(double sw, QueryDocumentSnapshot<Object?> postSnapshot) {
     },
   );
 }
-
 
 // Widget postContent(double sw, QueryDocumentSnapshot<Object?> postMap) {
 //   return Consumer<PostProvider>(
