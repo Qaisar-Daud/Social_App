@@ -1,24 +1,26 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:social_app/src/helpers/constants.dart';
+import 'package:social_app/src/views/bottom_bar_screens/video/stop_words.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import '../../../models/video_model/video_keywords.dart';
 import '../../../myapp.dart';
-import '../../../widgets/shimmer_loader.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
   final String videoDes;
-  final String videoTitle; // Pass the current video's title
-  final List<DocumentSnapshot> relatedVideos; // Pass related videos
+  final String videoTitle;
+  final String currentVideoId;
 
   const VideoPlayerScreen({
     super.key,
     required this.videoId,
     required this.videoTitle,
-    required this.relatedVideos, required this.videoDes,
+    required this.videoDes,
+    required this.currentVideoId,
   });
 
   @override
@@ -27,14 +29,12 @@ class VideoPlayerScreen extends StatefulWidget {
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late YoutubePlayerController _controller;
-  final CacheManager _cacheManager = CacheManager(Config('youtube_cache'));
-  late TextEditingController _resolutionController;
-  List<DocumentSnapshot> _relatedVideos = []; // Store related videos
-  bool _isFullscreen = false;
-  bool _isLoadingRelatedVideos = false;
-  bool _hasError = false;
-  String _errorMessage = '';
+  final CacheManager _cacheManager = CacheManager(Config('videos_cache'));
   final RefreshController _refreshController = RefreshController();
+  List<DocumentSnapshot> _relatedVideos = [];
+  bool _isFullscreen = false;
+  bool _isLoading = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
@@ -42,324 +42,282 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _controller = YoutubePlayerController(
       initialVideoId: widget.videoId,
       flags: const YoutubePlayerFlags(
-        forceHD: false,
         autoPlay: true,
         mute: false,
         enableCaption: true,
       ),
-    )..addListener(() {
-      if (_controller.value.isFullScreen != _isFullscreen) {
-        setState(() {
-          _isFullscreen = _controller.value.isFullScreen;
-        });
-      }
-    });
-
-    _resolutionController = TextEditingController();
-    _fetchRelatedVideos(); // Fetch related videos when the screen loads
+    )..addListener(_fullscreenListener);
+    _loadRelatedVideos();
   }
 
-  /// Fetch related videos based on the current video's title
-
-  void _fetchRelatedVideos() async {
-    setState(() {
-      _isLoadingRelatedVideos = true;
-      _hasError = false;
-    });
-
-    try {
-      // Extract keywords from the current video's title
-      final keywords = _extractKeywords(widget.videoDes);
-      print("Extracted Keywords: $keywords"); // Debug statement
-
-      // Break the keywords into chunks of 10 (Firestore's `whereIn` limit)
-      final keywordChunks = _chunkKeywords(keywords);
-
-      // Fetch videos that match any of the keywords
-      final List<DocumentSnapshot> allVideos = [];
-      for (final chunk in keywordChunks) {
-        final QuerySnapshot snapshot = await FirebaseFirestore.instance
-            .collection('saved_videos')
-            .where('title', arrayContainsAny:  chunk) // Filter by keywords
-            .get();
-
-        allVideos.addAll(snapshot.docs);
-      }
-
-      print("Fetched ${allVideos.length} related videos");  // Debug statement
-
-      setState(() {
-        _relatedVideos = allVideos;
-        _isLoadingRelatedVideos = false;
-      });
-    } catch (e) {
-      print("Error fetching related videos: $e"); // Debug statement
-      setState(() {
-        _isLoadingRelatedVideos = false;
-        _hasError = true;
-        _errorMessage = e.toString();
-      });
-    } finally {
-      _refreshController.refreshCompleted();
+  void _fullscreenListener() {
+    if (_controller.value.isFullScreen != _isFullscreen) {
+      setState(() => _isFullscreen = _controller.value.isFullScreen);
     }
   }
 
+  Future<void> _loadRelatedVideos() async {
+    if (mounted) setState(() => _isLoading = true);
 
-  List<String> _extractKeywords(String title) {
-    // Define a list of common keywords
-    var keywords = videoKeywords;
+    try {
+      final currentVideoText = '${widget.videoTitle} ${widget.videoDes}';
+      final keywords = _extractKeywords(currentVideoText);
 
-    // Find matching keywords in the title
-    return keywords
-        .where((keyword) => title.toLowerCase().contains(keyword))
+      final snapshot = await FirebaseFirestore.instance
+          .collection('saved_videos')
+          .get();
+
+      final videos = await _filterAndSortVideos(snapshot.docs, keywords);
+
+      if (mounted) setState(() => _relatedVideos = videos);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _refreshController.refreshCompleted();
+      }
+    }
+  }
+
+  List<String> _extractKeywords(String text) {
+    final stopWords = commonStopWords;
+    final words = text
+        .toLowerCase()
+        .split(RegExp(r"[\W_]+"))
+        .where((word) => word.length > 2 && !stopWords.contains(word))
+        .toList();
+
+    // Get unique words with frequency
+    final wordCount = <String, int>{};
+    for (final word in words) {
+      wordCount[word] = (wordCount[word] ?? 0) + 1;
+    }
+
+    // Sort and take top 10 frequent words
+    final sortedEntries = wordCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sortedEntries.take(10).map((e) => e.key).toList();
+  }
+
+  Future<List<DocumentSnapshot>> _filterAndSortVideos(
+      List<DocumentSnapshot> allVideos,
+      List<String> keywords,
+      ) async {
+    final List<Map<String, dynamic>> videoScores = [];
+
+    for (final doc in allVideos) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['videoId'] == widget.currentVideoId) continue;
+
+      final videoText = '${data['title']} ${data['description']}'.toLowerCase();
+      var score = 0;
+
+      for (final keyword in keywords) {
+        if (videoText.contains(keyword)) {
+          score += keyword.length; // Longer keywords get more weight
+        }
+      }
+
+      if (score > 0) {
+        videoScores.add({'doc': doc, 'score': score});
+      }
+    }
+
+    // Sort by score using the collection package
+    return videoScores
+        .sorted((a, b) => b['score'].compareTo(a['score']))
+        .map((e) => e['doc'] as DocumentSnapshot)
         .toList();
   }
 
-  // Break the keywords into chunks of 10
-  List<List<String>> _chunkKeywords(List<String> keywords) {
-    const chunkSize = 10; // Firestore's `whereIn` limit
-    final List<List<String>> chunks = [];
-    for (var i = 0; i < keywords.length; i += chunkSize) {
-      chunks.add(keywords.sublist(
-          i, i + chunkSize > keywords.length ? keywords.length : i + chunkSize));
-    }
-    return chunks;
-  }
-
-  void _onRefresh() async {
-    _fetchRelatedVideos();
-  }
+  void _onRefresh() => _loadRelatedVideos();
 
   @override
   Widget build(BuildContext context) {
 
+    final double sw = MediaQuery.sizeOf(context).width;
 
     return Scaffold(
-      appBar: _isFullscreen
-          ? null
-          : AppBar(
-        title: SizedBox(
-            width: 180,
-            child: Text(
-              widget.videoTitle,
-              style: const TextStyle(fontSize: 13, fontFamily: 'Inter'),
-            )),
-      ),
+      appBar: _isFullscreen ? null : _buildAppBar(),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Current Playing Video
-          YoutubePlayerBuilder(
-            onEnterFullScreen: () {
-              setState(() => _isFullscreen = true);
-            },
-            onExitFullScreen: () {
-              setState(() => _isFullscreen = false);
-            },
-            player: YoutubePlayer(
-              controller: _controller,
-              showVideoProgressIndicator: true,
-              progressIndicatorColor: Colors.blueAccent,
-              onReady: () {
-                // Fetch available resolutions when the video is ready
-                setState(() {
-                  _controller.setPlaybackQuality(VideoQuality.hd1080);
-                });
-              },
-            ),
-            builder: (context, player) {
-              return player;
-            },
-          ),
-          if(!_isFullscreen) const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Text("Other Videos: ", style: TextStyle(fontSize: 14),),
-          ),
-          if(!_isFullscreen) Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: _isLoadingRelatedVideos
-                  ? buildShimmerLoader() // Show shimmer effect while loading
-                  : _hasError
-                  ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _errorMessage,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    ElevatedButton(
-                      onPressed: _fetchRelatedVideos,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              )
-                  : SmartRefresher(
-                controller: _refreshController,
-                onRefresh: _onRefresh,
-                child: _relatedVideos.isEmpty
+          _buildVideoPlayer(),
 
-                // if related videos not match then other videos are show on screen
-                    ? ListView.builder(
-                  itemCount: widget.relatedVideos.length,
-                  itemBuilder: (context, index) {
-                    final video = widget.relatedVideos[index];
-
-                    final data =
-                    video.data() as Map<String, dynamic>;
-                    return ListTile(
-                      isThreeLine: true,
-                      minLeadingWidth: 100,
-                      minTileHeight: 70,
-                      title: Text(
-                        data['title'],
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      subtitle: Text(
-                        "Channel: ${data['channelTitle']}",
-                        style: const TextStyle(fontSize: 10),
-                      ),
-                      leading: SizedBox(
-                        width: 100,
-                        height: 60,
-                        child: FutureBuilder(
-                          future: _cacheManager.getSingleFile(data['thumbnail']),
-                          builder: (context, snapshot) {
-                            String decodedUrl = Uri.decodeFull(data['thumbnail']);
-
-                            if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                              return (snapshot.data != null) ? Image.file(
-                                snapshot.data!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Image.network(
-                                    defaultProfile,
-                                    fit: BoxFit.cover,
-                                  ); // Fallback image
-                                },
-                              ) : Image.network(
-                                defaultProfile,
-                                fit: BoxFit.cover,
-                              );
-                            }
-                            return Image.network(
-                              decodedUrl,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.network(
-                                  defaultProfile,
-                                  fit: BoxFit.cover,
-                                ); // Fallback image
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => VideoPlayerScreen(
-                              videoId: data['videoId'],
-                              videoTitle: data['title'],
-                              videoDes: data['description'],
-                              relatedVideos: widget.relatedVideos,
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                )
-                    : ListView.builder(
-                  itemCount: _relatedVideos.length,
-                  itemBuilder: (context, index) {
-                    final video = _relatedVideos[index];
-
-                    final videoData =
-                    video.data() as Map<String, dynamic>;
-                    return ListTile(
-                      title: Text(videoData['title']),
-                      subtitle: Text(
-                          "Channel: ${videoData['channelTitle']}"),
-                      leading: SizedBox(
-                        width: 100,
-                        height: 60,
-                        child: FutureBuilder(
-                          future: _cacheManager.getSingleFile(videoData['thumbnail']),
-                          builder: (context, snapshot) {
-                            String decodedUrl = Uri.decodeFull(videoData['thumbnail']);
-
-                            if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                              return (snapshot.data != null) ? Image.file(
-                                snapshot.data!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Image.network(
-                                    defaultProfile,
-                                    fit: BoxFit.cover,
-                                  ); // Fallback image
-                                },
-                              ) : Image.network(
-                                defaultProfile,
-                                fit: BoxFit.cover,
-                              );
-                            }
-                            return Image.network(
-                              decodedUrl,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.network(
-                                  defaultProfile,
-                                  fit: BoxFit.cover,
-                                ); // Fallback image
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      onTap: () {
-                        // Navigate to the selected related video
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => VideoPlayerScreen(
-                              videoId: videoData['videoId'],
-                              videoTitle: videoData['title'],
-                              videoDes: videoData['description'],
-                              relatedVideos: _relatedVideos,
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+          if (!_isFullscreen) Align(
+            alignment: Alignment.topLeft,
+            child: Container(
+              margin: EdgeInsets.only(left: sw * 0.02, top: sw * 0.02, bottom: sw * 0.02),
+              padding: EdgeInsets.symmetric(horizontal: sw * 0.04, vertical: sw * 0.012),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(sw * 0.1),
+                color: AppColors.containerdarkmode,
               ),
+              child: Text('Related videos', style: TextStyle(fontSize: sw * 0.038, color: AppColors.white, fontWeight: FontWeight.bold),),
             ),
-          )
+          ),
+          if (!_isFullscreen) _buildRelatedVideos(),
         ],
       ),
     );
   }
+
+  AppBar _buildAppBar() => AppBar(
+    title: SizedBox(
+      width: 180,
+      child: Text(
+        widget.videoTitle,
+        style: const TextStyle(fontSize: 13, fontFamily: 'Inter'),
+      ),
+    ),
+  );
+
+  Widget _buildVideoPlayer() => YoutubePlayerBuilder(
+    onEnterFullScreen: () => setState(() => _isFullscreen = true),
+    onExitFullScreen: () => setState(() => _isFullscreen = false),
+    player: YoutubePlayer(
+      key: ValueKey(widget.videoId), // Prevent unnecessary rebuilds
+      controller: _controller,
+      showVideoProgressIndicator: true,
+      progressIndicatorColor: Colors.blueAccent,
+      onReady: () => _controller.setPlaybackQuality(VideoQuality.hd1080),
+    ),
+    builder: (context, player) => player,
+  );
+
+  Widget _buildRelatedVideos() => Expanded(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: _isLoading
+          ? _buildShimmerLoader()
+          : _errorMessage.isNotEmpty
+          ? _buildErrorWidget()
+          : SmartRefresher(
+        controller: _refreshController,
+        onRefresh: _onRefresh,
+        child: _relatedVideos.isEmpty
+            ? _buildEmptyState()
+            : ListView.builder(
+          itemCount: _relatedVideos.length,
+          itemBuilder: (context, index) =>
+              _buildVideoItem(_relatedVideos[index]),
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildVideoItem(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return ListTile(
+      title: Text(data['title']),
+      subtitle: Text("Channel: ${data['channelTitle']}"),
+      leading: _buildThumbnail(data['thumbnail']),
+      onTap: () => _navigateToVideo(data),
+    );
+  }
+
+  Widget _buildThumbnail(String url) {
+    // Check if the URL is valid
+    final decodedUrl = Uri.decodeFull(url);
+    final isUrlValid = Uri.tryParse(decodedUrl)?.hasAbsolutePath ?? false;
+
+    return SizedBox(
+      width: 100,
+      height: 60,
+      child: isUrlValid
+          ? FutureBuilder(
+        future: _cacheManager.getSingleFile(decodedUrl),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Image.file(snapshot.data!, fit: BoxFit.cover);
+          }
+          return Image.network(
+            decodedUrl,
+            fit: BoxFit.cover,
+            loadingBuilder: (_, child, progress) => progress == null
+                ? child
+                : const Center(child: CircularProgressIndicator()),
+            errorBuilder: (_, __, ___) => _buildFallbackImage(),
+          );
+        },
+      )
+          : _buildFallbackImage(), // Fallback for invalid URLs
+    );
+  }
+
+  Widget _buildFallbackImage() {
+    return Image.network(
+      defaultProfile, // Use your fallback image URL
+      fit: BoxFit.cover,
+    );
+  }
+
+  void _navigateToVideo(Map<String, dynamic> data) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoPlayerScreen(
+          videoId: data['videoId'],
+          videoTitle: data['title'],
+          videoDes: data['description'],
+          currentVideoId: data['videoId'],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoader() => ListView.builder(
+    itemCount: 5,
+    itemBuilder: (_, __) => const ShimmerVideoListItem(),
+  );
+
+  Widget _buildErrorWidget() => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(_errorMessage, style: const TextStyle(color: Colors.red)),
+        ElevatedButton(
+          onPressed: _loadRelatedVideos,
+          child: const Text('Retry'),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildEmptyState() => const Center(
+    child: Text("No related videos found"),
+  );
+
   @override
   void dispose() {
     _controller.dispose();
-    _resolutionController.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 }
 
-extension on String {
-  get availableQualities => null;
+// Add this shimmer widget
+class ShimmerVideoListItem extends StatelessWidget {
+  const ShimmerVideoListItem({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 100,
+        height: 60,
+        color: Colors.grey[300], // Shimmer placeholder color
+      ),
+      title: Container(
+        height: 16,
+        color: Colors.grey[300], // Shimmer placeholder color
+      ),
+      subtitle: Container(
+        height: 14,
+        color: Colors.grey[300], // Shimmer placeholder color
+      ),
+    );
+  }
 }
 
 class VideoQuality {

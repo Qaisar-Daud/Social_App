@@ -1,5 +1,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/widgets/preview_full_image.dart';
@@ -7,7 +8,10 @@ import '../../../../../providers/post_provider.dart';
 
 // Post Content with "See More" functionality
 Widget postContent(double sw, QueryDocumentSnapshot<Object?> postSnapshot) {
-  print("🔍 Checking postMap: ${postSnapshot.data()}");
+
+  if (kDebugMode) {
+    print("🔍 Checking postMap: ${postSnapshot.data()}");
+  }
 
   Map<String, dynamic> postMap = postSnapshot.data() as Map<String, dynamic>;
 
@@ -23,9 +27,11 @@ Widget postContent(double sw, QueryDocumentSnapshot<Object?> postSnapshot) {
           ? postMap['postImages'] as List<dynamic>
           : [];
 
-      print("✅ postId: $postId");
-      print("✅ postText: $postText");
-      print("✅ postImages: $postImages");
+      if (kDebugMode) {
+        print("✅ postId: $postId");
+        print("✅ postText: $postText");
+        print("✅ postImages: $postImages");
+      }
 
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: sw * 0.04, vertical: sw * 0.02),
@@ -95,84 +101,3 @@ Widget postContent(double sw, QueryDocumentSnapshot<Object?> postSnapshot) {
     },
   );
 }
-
-// Widget postContent(double sw, QueryDocumentSnapshot<Object?> postMap) {
-//   return Consumer<PostProvider>(
-//     builder: (context, postProvider, child) {
-//
-//       bool isExpanded = postProvider.isExpanded(postMap['postId']);
-//
-//       return Padding(
-//         padding: EdgeInsets.only(
-//           left: sw * 0.04,
-//           right: sw * 0.04,
-//           bottom: sw * 0.04,
-//         ),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             if (postMap['postText'] != null && postMap['postText'].isNotEmpty)
-//               GestureDetector(
-//                 onTap: () {
-//                   if (postMap['postText'] != null && postMap['postText'].split('\n').length > 10) {
-//                     postProvider.toggleExpand(postMap['postId']);
-//                   }
-//                 },
-//                 child: Text(
-//                   postMap['postText'],
-//                   maxLines: isExpanded ? null : 10,
-//                   overflow: isExpanded
-//                       ? TextOverflow.visible
-//                       : TextOverflow.ellipsis,
-//                   style: TextStyle(fontSize: sw * 0.032),
-//                   textAlign: TextAlign.left,
-//                 ),
-//               ),
-//             01.height,
-//             if (postMap['postText'] != null &&
-//                 postMap['postText'].split('\n').length > 10)
-//               Align(
-//                 alignment: Alignment.topRight,
-//                 child: TextButton(
-//                   onPressed:
-//                       () => postProvider.toggleExpand(postMap['postId']),
-//                   child: Text(
-//                     isExpanded ? "See Less" : "See More",
-//                     style: TextStyle(fontSize: sw * 0.03),
-//                   ),
-//                 ),
-//               ),
-//             01.height,
-//             if (postMap['postImages'] != null &&
-//                 (postMap['postImages'] as List).isNotEmpty)
-//               InkWell(
-//                 onTap: () {
-//                   previewFullImage(context, postMap['postImages'][0]);
-//                 },
-//                 child: Container(
-//                   width: sw,
-//                   height: sw * 0.8,
-//                   clipBehavior: Clip.hardEdge,
-//                   decoration: BoxDecoration(
-//                     borderRadius: BorderRadius.circular(sw * 0.02),
-//                   ),
-//                   child: Image.network(
-//                     postMap['postImages'][0],
-//                     fit: BoxFit.cover,
-//                     errorBuilder: (context, error, stackTrace) {
-//                       return Center(
-//                         child: SizedBox(
-//                           width: sw * 0.14,
-//                           child: CircularProgressIndicator(strokeWidth: 0.8),
-//                         ),
-//                       );
-//                     },
-//                   ),
-//                 ),
-//               ),
-//           ],
-//         ),
-//       );
-//     },
-//   );
-// }
