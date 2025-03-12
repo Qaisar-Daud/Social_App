@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
@@ -25,7 +26,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   void initState() {
-    currentUserNameId();
+    currentUserInfo();
     // This will implement state into this class (Search Page)
     WidgetsBinding.instance.addObserver(this);
     // When User Open The App
@@ -65,28 +66,37 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       builder: (context, navigateValue, child) {
         return Scaffold(
           appBar: AppBar(
-            title: InkWell(
-              onTap: () {
-                Navigator.pushNamed(context, RouteNames.mainProfileScreen);
-              },
-              child: Row(
-                children: [
-                  // Background Image
-                  CircleAvatar(
-                    radius: sw * 0.06,
-                    onBackgroundImageError: (exception, stackTrace) {
-                      Icon(Icons.broken_image);
-                    },
-                    backgroundImage: NetworkImage("${user!.photoURL}",),),
-                  10.width,
-                  // User Name
-                  CustomText(txt: '${user!.displayName}', fontSize: sw * 0.04,)
-                ],
-              ),
+            automaticallyImplyLeading: false,
+            // User Profile And App Name
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // User Profile
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, RouteNames.mainProfileScreen);
+                  },
+                  child: Container(
+                    width: sw * 0.1,
+                    height: sw * 0.1,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      shape: BoxShape.circle
+                    ),
+                    child: (user != null) ? Image.network("${user!.photoURL}", fit: BoxFit.cover,) : CircularProgressIndicator(strokeWidth: 0.6,),
+                  ),
+                ),
+                10.width,
+                // App Name
+                SizedBox(
+                    width: sw * 0.48,
+                    child: CustomText(txt: 'Glintor', fontSize: sw * 0.05,))
+              ],
             ),
             actions: [
               IconButton(onPressed: () {
-                
+                Navigator.pushNamed(context, RouteNames.notificationScreen);
               }, icon: Icon(Icons.notifications, size: sw * 0.07,))
             ],
           ),
@@ -111,42 +121,36 @@ class BottomBar extends StatelessWidget {
       'search': Icons.search,
       'home': Icons.home,
       'create post': Icons.post_add,
+      'Videos': CupertinoIcons.play_rectangle,
     };
 
     return Consumer<ThemeProvider>(builder: (context, themeValue, child) {
-      return Consumer<BottomNavProvider>(
-      builder: (context, switchValue, child) {
-        return (switchValue.isVisible)
-            ?
-        BottomNavigationBar(
-          iconSize: sw * 0.055,
-          currentIndex: providerValue.selectedIndex,
-          onTap: (value) {
-            providerValue.newIndex = value;
-          },
-          items: List.generate(
-            icons.length,
-                (index) {
-              String name = icons.keys.elementAt(index);
-              IconData icon = icons.values.elementAt(index);
+      return BottomNavigationBar(
+        iconSize: sw * 0.055,
+        currentIndex: providerValue.selectedIndex,
+        onTap: (value) {
+          providerValue.newIndex = value;
+        },
+        items: List.generate(
+          icons.length,
+              (index) {
+            String name = icons.keys.elementAt(index);
+            IconData icon = icons.values.elementAt(index);
 
-              return BottomNavigationBarItem(
-                activeIcon: Container(
-                  padding: EdgeInsets.symmetric(horizontal: sw * 0.08, vertical: sw * 0.014),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(sw * 0.1), color: themeValue.themeMode == ThemeMode.light ? AppColors.teal : AppColors.containerdarkmode,),
-                  child: Icon(icon),
-                ),
-                icon: Icon(icon),
-                label: name,
-                tooltip: 'Navigators',
-              );
-            },
-          ),
-        )
-            :
-        SizedBox.shrink();
-      },
-    );
+            return BottomNavigationBarItem(
+              backgroundColor: themeValue.themeMode == ThemeMode.light ? Color(0xff072E33) : AppColors.containerdarkmode,
+              activeIcon: Container(
+                padding: EdgeInsets.symmetric(horizontal: sw * 0.08, vertical: sw * 0.014),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(sw * 0.1), color: themeValue.themeMode == ThemeMode.light ? AppColors.teal : AppColors.containerdarkmode,),
+                child: Icon(icon),
+              ),
+              icon: Icon(icon),
+              label: name,
+              tooltip: 'Navigators',
+            );
+          },
+        ),
+      );
     },);
   }
 }

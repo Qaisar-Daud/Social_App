@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -10,18 +9,16 @@ import 'package:social_app/src/myapp.dart';
 import 'package:social_app/src/utils/routes/routes_name.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../helpers/constants.dart';
-import '../../../widgets/custom_btn.dart';
-import '../../../widgets/custom_txt.dart';
-import '../../../widgets/custom_txt_field.dart';
+import '../../firebase/current_user_info.dart';
+import '../../helpers/constants.dart';
+import '../../models/profile_service.dart';
+import '../../widgets/custom_btn.dart';
+import '../../widgets/custom_txt.dart';
+import '../../widgets/custom_txt_field.dart';
 
 class EditUserProfileInfo extends StatefulWidget {
 
   final Map<String, dynamic> userMap;
-  //
-  // final String imageUrl;
-  // final TextEditingController name;
-  // final TextEditingController bio;
 
   const EditUserProfileInfo({super.key, required this.userMap,});
 
@@ -31,54 +28,36 @@ class EditUserProfileInfo extends StatefulWidget {
 
 class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
 
-  late Map<String, dynamic> preUserData;
+  final profileService = ProfileService();
+
 
   @override
   void initState() {
     super.initState();
-    preUserData = widget.userMap;
   }
-
-
 
   bool isLoading = false;
 
   FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
-  User? user = FirebaseAuth.instance.currentUser;
-
-  updateUserInfo(
-      {required String newImgUrl,
-      required String newName,
-      required String newBio}) async {
+  updateUserInfo({required String newImgUrl, required TextEditingController newName, required TextEditingController newBio}) async {
     try {
       if(user != null){
         setState(() => isLoading = true);
-        await user!.updateDisplayName(newName);
+        await user!.updateDisplayName(newName.text);
         await user!.updatePhotoURL(newImgUrl);
 
         // Update On Firebase
-        await firestore.collection('Users').doc(uid).update({
-          'fullName': newName,
-          'bio': newBio,
-          'imgUrl': newImgUrl,
-        }).then(
-              (value) {
-            Navigator.pop(context);
-          },
-        );
+        await firestore.collection('Users').doc(user!.uid).update({
+          'fullName': newName.text,
+          'bio': newBio.text,
+        }).then((value) => Navigator.pop(context),);
       }
     } catch (er) {
       setState(() {
         isLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            duration: const Duration(seconds: 3),
-            content: CustomText(
-              txt: '$er',
-              fontSize: 12,
-            )));
+        showMessage("$er");
       });
     } finally {
       setState(() => isLoading = false);
@@ -97,32 +76,15 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
         (xFile) {
           if (xFile != null) {
             imgFile = File(xFile.path);
+            setState(() {});
           } else {
-            setState(() => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                duration: const Duration(seconds: 3),
-                dismissDirection: DismissDirection.endToStart,
-                showCloseIcon: true,
-                behavior: SnackBarBehavior.floating,
-                content: CustomText(
-                  txt: "You didn't select any image",
-                  fontSize: 12,
-                  fontColor: AppColors.white,
-                ))));
+            setState(() => showMessage("You didn't select any image"));
           }
         },
       );
     } catch (er) {
-      setState(() => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          duration: const Duration(seconds: 3),
-          dismissDirection: DismissDirection.endToStart,
-          showCloseIcon: true,
-          behavior: SnackBarBehavior.floating,
-          content: CustomText(
-            txt: '$er',
-            fontSize: 12,
-          ))));
+      setState(() => showMessage("$er"));
     }
-    setState(() {});
   }
 
   // Upload On Firebase
@@ -134,7 +96,7 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
       var ref = FirebaseStorage.instance
           .ref()
           .child('images')
-          .child(uid)
+          .child(user!.uid)
           .child('profileImg')
           .child(fileName);
 
@@ -142,26 +104,34 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
 
       String imgUrl = await uploadTask.ref.getDownloadURL();
 
+      // Call the method with the new image URL
+      await profileService.updateProfileImage(imgUrl);
 
       // Method Calling
       await updateUserInfo(
           newImgUrl: imgUrl,
           newName: widget.userMap['name'],
-          newBio: widget.userMap['imgUrl']);
+          newBio: widget.userMap['bio']
+      );
     } catch (er) {
       setState(() {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            duration: const Duration(seconds: 3),
-            dismissDirection: DismissDirection.endToStart,
-            showCloseIcon: true,
-            behavior: SnackBarBehavior.floating,
-            content: CustomText(
-              txt: '$er',
-              fontSize: 12,
-            )));
+        showMessage("$er");
         isLoading = false;
       });
     }
+  }
+  
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showMessage(String message){
+   return ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+       duration: const Duration(seconds: 3),
+       dismissDirection: DismissDirection.endToStart,
+       showCloseIcon: true,
+       behavior: SnackBarBehavior.floating,
+       content: CustomText(
+         txt: message,
+         fontSize: 12,
+         fontColor: AppColors.white,
+       ))); 
   }
 
   @override
@@ -169,7 +139,6 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
     final double sw = MediaQuery.sizeOf(context).width;
 
     return Scaffold(
-      backgroundColor: AppColors.white.withOpacity(0.95),
       appBar: AppBar(
         title: CustomText(
           txt: 'Edit Your Info',
@@ -208,6 +177,9 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
                           Image.file(
                             File(imgFile!.path),
                             fit: BoxFit.fill,
+                            errorBuilder: (context, error, stackTrace) {
+                              return CircularProgressIndicator();
+                            },
                           )
                               :
                           (widget.userMap['imgUrl'].isNotEmpty)
@@ -295,7 +267,8 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
                         onTap: () {
                           if (imgFile != null) {
                             uploadOnFirebase(imgFile!);
-                          } else {
+                          }
+                          else {
                             updateUserInfo(newImgUrl: widget.userMap['imgUrl'], newName: widget.userMap['name'], newBio: widget.userMap['bio']);
                           }
                         },
@@ -311,7 +284,7 @@ class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
           if (isLoading == true)
             Positioned.fill(
                 child: Container(
-                    color: AppColors.shiningWhite.withOpacity(0.8),
+                    color: AppColors.shiningWhite.withAlpha(100),
                     alignment: Alignment.center,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

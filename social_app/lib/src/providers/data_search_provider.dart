@@ -33,21 +33,6 @@ class SearchProvider with ChangeNotifier {
     }
   }
 
-  // Save search query to Firebase
-  Future<void> saveSearchQuery(String query) async {
-    final currentUserUid = auth.currentUser!.uid;
-    final searchHistoryRef = firestore.collection('SearchHistory').doc(currentUserUid);
-
-    await searchHistoryRef.set({
-      'searches': FieldValue.arrayUnion([query]),
-    }, SetOptions(merge: true));
-
-    if (!searchHistory.contains(query)) {
-      searchHistory.add(query);
-      notifyListeners();
-    }
-  }
-
   // Clear search history from Firebase and UI
   Future<void> clearSearchHistory() async {
     final currentUserUid = auth.currentUser!.uid;

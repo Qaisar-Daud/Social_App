@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../../widgets/custom_txt.dart';
+import '../../widgets/custom_txt.dart';
+
 
 class OtherUsersInfo extends StatelessWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> data;

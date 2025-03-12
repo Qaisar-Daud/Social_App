@@ -1,12 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import '../views/bottom_bar_screens/home_screens/create_post.dart';
-import '../views/bottom_bar_screens/home_screens/home.dart';
-import '../views/bottom_bar_screens/notification.dart';
-import '../views/bottom_bar_screens/profile_screen/profile_main.dart';
+import '../views/bottom_bar_screens/create_post.dart';
+import '../views/bottom_bar_screens/home/home.dart';
 import '../views/bottom_bar_screens/search.dart';
-import '../views/chat_screen/main_chats_screen.dart';
+import '../views/bottom_bar_screens/video/video_screen.dart';
 import '../views/main_screen.dart';
 
 class BottomNavProvider extends ChangeNotifier {
@@ -36,7 +34,7 @@ class BottomNavProvider extends ChangeNotifier {
       case 2:
         _screen = const CreatePostScreen();
       case 3:
-        _screen = const MainChatsScreen();
+        _screen = const VideoScreen();
       default:
         return MainScreen();
     }

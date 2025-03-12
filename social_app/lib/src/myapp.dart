@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:social_app/src/providers/comment_provider.dart';
 import 'package:social_app/src/providers/data_search_provider.dart';
 import 'package:social_app/src/providers/isloading_provider.dart';
 import 'package:social_app/src/providers/bottom_nav_provider.dart';
@@ -23,8 +22,6 @@ class MyApp extends StatelessWidget {
       providers: [
         // 🎨 Theme Provider
         ChangeNotifierProvider<ThemeProvider>(create: (context) => ThemeProvider(),),
-        // Comment Provider
-        ChangeNotifierProvider<CommentProvider>(create: (context) => CommentProvider(),),
         // Bottom Bar Screen Providers
         ChangeNotifierProvider<BottomNavProvider>(
             create: (_) => BottomNavProvider()),

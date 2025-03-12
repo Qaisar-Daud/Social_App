@@ -6,7 +6,9 @@ class RouteNames {
   static const String loginScreen = 'login';
   static const String forgetPasswordScreen = 'forgetPassword';
   static const String mainScreen = 'mainScreen';
+  static const String notificationScreen = 'notificationScreen';
   static const String homeScreen = 'home';
+  static const String videoScreen = 'videoScreen';
   static const String mainChatsScreen = 'mainChatsScreen';
   static const String chatRoomScreen = 'mainChatsScreen';
   static const String addNewPost = 'addPost';

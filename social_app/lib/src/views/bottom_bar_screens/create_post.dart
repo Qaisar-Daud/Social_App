@@ -9,10 +9,10 @@ import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../helpers/constants.dart';
-import '../../../providers/bottom_nav_provider.dart';
-import '../../../widgets/custom_btn.dart';
-import '../../../widgets/custom_txt.dart';
+import '../../helpers/constants.dart';
+import '../../providers/bottom_nav_provider.dart';
+import '../../widgets/custom_btn.dart';
+import '../../widgets/custom_txt.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -76,8 +76,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     int status = 1;
 
-    DocumentSnapshot<Map<String, dynamic>> currentUserData =
-        await firestore.collection('Users').doc(uid).get();
+    DocumentSnapshot<Map<String, dynamic>> currentUserData = await firestore.collection('Users').doc(uid).get();
 
     try {
       String postId = const Uuid().v1();

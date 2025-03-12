@@ -1,7 +1,9 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:social_app/firebase_options.dart';
+import 'package:social_app/src/models/post_model/post_model.dart';
 import 'package:social_app/src/myapp.dart';
 
 Future<void> main() async {
@@ -14,6 +16,14 @@ Future<void> main() async {
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.deviceCheck,
   );
+
+  // for preloading or offline data
+
+  await Hive.initFlutter();
+  Hive.registerAdapter(PostAdapter()); // Register adapter for Post model
+  await Hive.openBox<Post>('posts');
+
+  await Hive.openBox<String>('likedPosts');
 
   runApp(const MyApp());
 }

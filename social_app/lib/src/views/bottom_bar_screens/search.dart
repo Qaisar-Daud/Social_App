@@ -1,17 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:social_app/src/firebase/current_user_info.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
-import 'package:social_app/src/views/bottom_bar_screens/profile_screen/other_users_info.dart';
-
 import '../../helpers/constants.dart';
 import '../../providers/data_search_provider.dart';
 import '../../widgets/custom_txt.dart';
-import '../../widgets/shimmer_loader.dart';
 import '../chat_screen/chatroom_screen.dart';
+import '../profile_screen/other_users_info.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});

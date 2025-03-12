@@ -25,9 +25,9 @@ class AppThemes {
       textStyle: WidgetStatePropertyAll(TextStyle(fontFamily: 'Poppins', color: AppColors.black)),
       padding: WidgetStatePropertyAll(EdgeInsets.only(left: 10))
     ),
-    
+
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: AppColors.yellow,
+      landscapeLayout: BottomNavigationBarLandscapeLayout.centered,
       selectedIconTheme: IconThemeData(
         color: AppColors.white,
       ),
@@ -113,6 +113,7 @@ class AppThemes {
       useMaterial3: true,
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.yellow,
+        landscapeLayout: BottomNavigationBarLandscapeLayout.centered,
         selectedIconTheme: IconThemeData(
           color: AppColors.white,
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:social_app/src/providers/theme_provider.dart';
 
 import '../helpers/constants.dart';
@@ -34,6 +35,8 @@ class DavineTabBar extends StatelessWidget {
         child: Column(
           // The Column widget arranges its children (TabBar and TabBarView) vertically.
           children: [
+            Divider(),
+            02.height,
             TabBar(
               // The controller that manages the state of the TabBar.
               controller: tabController,
@@ -81,6 +84,8 @@ class DavineTabBar extends StatelessWidget {
               // List of widgets representing the tabs.
               tabs: tabsName,
             ),
+            04.height,
+            Divider(),
             Expanded(
               // The TabBarView widget displays the content of each tab.
                 child: TabBarView(controller: tabController, children: tabScreens)),
