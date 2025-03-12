@@ -28,8 +28,6 @@ class _VideoScreenState extends State<VideoScreen> {
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
-  DocumentSnapshot? _lastDocument;
-  bool _hasMore = true;
 
   @override
   void initState() {
@@ -47,51 +45,30 @@ class _VideoScreenState extends State<VideoScreen> {
 
   void _onScroll() {
     if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent &&
-        !_isLoading &&
-        _hasMore) {
-      _fetchVideos(loadMore: true);
+        _scrollController.position.maxScrollExtent && !_isLoading) {
+      _fetchVideos();
     }
   }
 
-  void _fetchVideos({bool loadMore = false, String? searchQuery}) async {
+  void _fetchVideos() async {
     if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
       _hasError = false;
-      if (!loadMore) {
-        _videos.clear();
-        _lastDocument = null;
-        _hasMore = true;
-      }
+      _videos.clear();
     });
 
     try {
-      Query query = _videosCollection.limit(20); // Fetch 20 videos at a time
-      if (searchQuery != null && searchQuery.isNotEmpty) {
-        query = query.where('title', isGreaterThanOrEqualTo: searchQuery);
-      }
-      if (loadMore && _lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
+      final QuerySnapshot snapshot = await _videosCollection.get();
+      List<DocumentSnapshot> newVideos = snapshot.docs;
 
-      final QuerySnapshot snapshot = await query.get();
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _hasMore = false;
-        });
-      } else {
-        List<DocumentSnapshot> newVideos = snapshot.docs;
+      // 🎲 Randomly shuffle videos before displaying
+      newVideos.shuffle(Random());
 
-        // 🎲 Randomly shuffle videos before displaying
-        newVideos.shuffle(Random());
-
-        setState(() {
-          _videos.addAll(newVideos);
-          _lastDocument = snapshot.docs.last;
-        });
-      }
+      setState(() {
+        _videos.addAll(newVideos);
+      });
     } catch (e) {
       setState(() {
         _hasError = true;
@@ -101,11 +78,7 @@ class _VideoScreenState extends State<VideoScreen> {
       setState(() {
         _isLoading = false;
       });
-      if (loadMore) {
-        _refreshController.loadComplete();
-      } else {
-        _refreshController.refreshCompleted();
-      }
+      _refreshController.refreshCompleted();
     }
   }
 
@@ -115,7 +88,7 @@ class _VideoScreenState extends State<VideoScreen> {
 
   void _onSearch() async {
     final query = _searchController.text.trim();
-    _fetchVideos(searchQuery: query);
+    _fetchVideos();
   }
 
   @override
@@ -162,7 +135,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     style: const TextStyle(color: Colors.red),
                   ),
                   ElevatedButton(
-                    onPressed: () => _fetchVideos(loadMore: true),
+                    onPressed: () => _fetchVideos(),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -177,17 +150,12 @@ class _VideoScreenState extends State<VideoScreen> {
                 controller: _refreshController,
                 enablePullUp: true,
                 onRefresh: _onRefresh,
-                onLoading: () => _fetchVideos(loadMore: true),
                 child: _isLoading && _videos.isEmpty
                     ? buildShimmerLoader()
                     : ListView.builder(
                   controller: _scrollController,
-                  itemCount: _videos.length + (_hasMore ? 1 : 0),
+                  itemCount: _videos.length,
                   itemBuilder: (context, index) {
-                    if (index == _videos.length) {
-                      // When Video List Reach To End.
-                      return const SizedBox();
-                    }
                     final video = _videos[index];
                     return _buildVideoItem(video);
                   },
@@ -199,6 +167,7 @@ class _VideoScreenState extends State<VideoScreen> {
       ),
     );
   }
+  
   // Highlight matching text in search results
   Widget highlightText(String text, String query) {
     if (query.isEmpty) {
