@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/widgets/preview_full_image.dart';
+import '../../../../../firebase/current_user_info.dart';
 import '../../../../../providers/post_provider.dart';
 
 // Post Content with "See More" functionality
@@ -12,7 +13,7 @@ Widget postContent(double sw, QueryDocumentSnapshot<Object?> postSnapshot) {
   if (kDebugMode) {
     print("🔍 Checking postMap: ${postSnapshot.data()}");
   }
-
+  
   Map<String, dynamic> postMap = postSnapshot.data() as Map<String, dynamic>;
 
   return Consumer<PostProvider>(

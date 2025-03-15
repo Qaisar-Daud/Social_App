@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
+import 'package:social_app/src/providers/theme_provider.dart';
 import 'package:social_app/src/views/profile_screen/tab_bar_screens/app_setting_screen.dart';
 import 'package:social_app/src/views/profile_screen/tab_bar_screens/saved_post_screen.dart';
 import 'package:social_app/src/views/profile_screen/tab_bar_screens/watch_user_uploaded_posts_screen.dart';
@@ -38,35 +40,37 @@ class _ProfileMainScreenState extends State<ProfileMainScreen> with SingleTicker
     final double sw = MediaQuery.sizeOf(context).width;
 
     return Scaffold(
-      body: Padding(
-        padding: EdgeInsets.only(
-            left: sw * 0.04, right: sw * 0.04, top: sw * 0.04),
-        child: Column(
-          children: [
-            // Current User Profile Info and logout Button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Current User Info
-                userProfileInfo(sw),
-                // Logout Button
-                IconButton(
-                    onPressed: () {
-                      signOut();
-                    },
-                    icon: Icon(
-                      Icons.logout,
-                      color: Colors.red,
-                      size: sw * 0.06,
-                    )),
-              ],
-            ),
-            20.height,
-            // Here User's Follow, Following, and Post Count Info will show
-            followerInfo(sw),
-            20.height,
-            tabBarViews(sw),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+              left: sw * 0.04, right: sw * 0.04, top: sw * 0.04),
+          child: Column(
+            children: [
+              // Current User Profile Info and logout Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Current User Info
+                  userProfileInfo(sw),
+                  // Logout Button
+                  IconButton(
+                      onPressed: () {
+                        signOut();
+                      },
+                      icon: Icon(
+                        Icons.logout,
+                        color: Colors.red,
+                        size: sw * 0.06,
+                      )),
+                ],
+              ),
+              20.height,
+              // Here User's Follow, Following, and Post Count Info will show
+              followerInfo(sw),
+              20.height,
+              tabBarViews(sw),
+            ],
+          ),
         ),
       ),
     );
@@ -209,39 +213,42 @@ class _ProfileMainScreenState extends State<ProfileMainScreen> with SingleTicker
   }
 
   Widget followerInfo(double sw){
-    return DataTable(
-        headingTextStyle: TextStyle(fontSize: sw * 0.036),
-        dataTextStyle: TextStyle(fontSize: sw * 0.034),
-        dividerThickness: 0,
-        border: TableBorder.all(
-            width: sw * 0.001,
-            borderRadius: BorderRadius.circular(sw * 0.01)),
-        columns: const [
-          DataColumn(
-              label: Text(
-                'Following',
+    return Consumer<ThemeProvider>(builder: (context, value, child) {
+      return DataTable(
+          headingTextStyle: TextStyle(fontSize: sw * 0.036),
+          dataTextStyle: TextStyle(fontSize: sw * 0.034),
+          dividerThickness: 0,
+          border: TableBorder.all(
+              width: sw * 0.001,
+              color: value.themeMode == ThemeMode.light ? AppColors.black : AppColors.white,
+              borderRadius: BorderRadius.circular(sw * 0.01)),
+          columns: const [
+            DataColumn(
+                label: Text(
+                  'Following',
+                )),
+            DataColumn(
+                label: Text(
+                  'Followers',
+                )),
+            DataColumn(
+                label: Text(
+                  'Posts',
+                )),
+          ],
+          rows: [
+            DataRow(cells: [
+              DataCell(Text(
+                '16',
               )),
-          DataColumn(
-              label: Text(
-                'Followers',
+              DataCell(Text(
+                '129',
               )),
-          DataColumn(
-              label: Text(
-                'Posts',
+              DataCell(Text((totalUploadedPosts != -1 ) ? '$totalUploadedPosts' : '0',
               )),
-        ],
-        rows: [
-          DataRow(cells: [
-            DataCell(Text(
-              '16',
-            )),
-            DataCell(Text(
-              '129',
-            )),
-            DataCell(Text((totalUploadedPosts != -1 ) ? '$totalUploadedPosts' : '0',
-            )),
-          ]),
-        ]);
+            ]),
+          ]);
+    },);
   }
 
   Widget tabBarViews(double sw){

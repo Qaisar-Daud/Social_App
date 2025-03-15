@@ -199,14 +199,14 @@ class _SearchScreenState extends State<SearchScreen> {
               return Card(
                 child: ListTile(
                   onTap: () async {
-                    // Save the searched user to search history
-                    await searchProvider.saveSearchedUser(user);
-
-                    // Navigate to the user's info screen
+                    final roomId = await searchProvider.chatRoomID(user['userId']);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => OtherUsersInfo(data: user),
+                        builder: (context) => ChatroomScreen(
+                          chatRoomId: roomId,
+                          otherUserMap: user,
+                        ),
                       ),
                     );
                   },
@@ -234,24 +234,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     style: TextStyle(fontSize: sw * 0.028),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  trailing: InkWell(
-                    onTap: () async {
-                      final roomId = await searchProvider.chatRoomID(user['userId']);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatroomScreen(
-                            chatRoomId: roomId,
-                            otherUserMap: user,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Icon(
-                      CupertinoIcons.chat_bubble_text,
-                      size: sw * 0.06,
-                      color: AppColors.green,
-                    ),
+                  trailing: Icon(
+                    CupertinoIcons.chat_bubble_text,
+                    size: sw * 0.06,
+                    color: AppColors.green,
                   ),
                 ),
               );

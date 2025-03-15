@@ -39,8 +39,9 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, value, child) => MaterialApp(
           title: 'Glintor',
+          debugShowCheckedModeBanner: false,
           // When 🎨 Theme Toggle
-          themeMode: ThemeMode.system,
+          themeMode: value.themeMode,
           // 🎨 Light Theme
           theme: AppThemes.lightTheme,
           // 🎨 Dark Theme

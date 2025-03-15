@@ -61,11 +61,51 @@ class _SignupScreenState extends State<SignupScreen> {
   DateTime? newDate;
 
   /// User Account Creation Method After Checking All Validation
-  /// User Account Creation Method After Checking All Validation
+
   FirebaseAuth firebaseAuth = FirebaseAuth.instance;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  // method
+  uniqueUserName(String firstName) {
+    String cleanName = firstName.replaceAll(' ', '');
+    String shortName = cleanName.substring(0, min(8, cleanName.length));
+    userId = "${shortName.toLowerCase()}${uuid.v4().substring(0, 6)}";
+
+    print('Generated userId: $userId');
+  }
+
+  /// Eligibility Check:
+  // If the calculated age is less than 18, an error message is occurred.
+  ageEligibility(DateTime selectedDate) async {
+
+    final today = DateTime.now();
+    try{
+      final age = today.year - selectedDate.year -
+          ((today.month < selectedDate.month || (today.month == selectedDate.month && today.day < selectedDate.day)) ? 1 : 0);
+
+      if (age < 18) {
+        setState(() {
+          dateValidator = 0;
+          dateErrorMessage = 'You must be at least 18 years old';
+        });
+      } else {
+        bool locationGranted = await requestLocationPermission();
+        if (locationGranted) {
+          setState(() => isLoading = true);
+          dateOfBirth = DateFormat.yMMMd().format(selectedDate);
+          uniqueUserName(nameController.text);
+          signUpMethod(nameController.text, emailController.text, passwordController.text);
+        } else {
+          showSnackBar("Warning⚠️: Please enable location permissions");
+        }
+      }
+    } catch (er){
+      showSnackBar("$er");
+    }
+  }
+
   Future<void> signUpMethod(String name, String email, String password) async {
+    print('Hello');
     setState(() => isLoading = true);
 
     try {
@@ -113,27 +153,8 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  // google signIn
-  Future<void> _signupWithGoogle() async {
-    try{
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await firebaseAuth.signInWithCredential(credential).whenComplete(() {
-        Navigator.pushReplacementNamed(context, RouteNames.mainScreen);
-      },);
-
-    } catch (er){
-      showSnackBar("Account Not Selected");
-    }
-  }
-
   /// *******************[User Location]*****************************************
-  /// TODO: Get Current Location Of Device
+  // TODO: Get Current Location Of Device
 
   Future<bool> requestLocationPermission() async {
     // Check if GPS (Location Services) is enabled
@@ -213,8 +234,7 @@ class _SignupScreenState extends State<SignupScreen> {
       return false;
     }
 
-    if (permission == LocationPermission.whileInUse ||
-        permission == LocationPermission.always) {
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
       try {
         Position position = await Geolocator.getCurrentPosition();
         final longitude = position.longitude;
@@ -239,14 +259,31 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // ******************[Location Section End ]**********************************
 
+  /// Helper function to show a Snackbar
+  void showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+        content: CustomText(
+          txt: message,
+          fontSize: 12,
+          fontColor: AppColors.white,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+
     final double sw = MediaQuery.sizeOf(context).width;
 
     return SafeArea(
       top: true,
       child: Scaffold(
-        backgroundColor: AppColors.white.withOpacity(0.95),
+        backgroundColor: AppColors.white.withAlpha(240),
         body: Stack(
           children: [
             SingleChildScrollView(
@@ -378,24 +415,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         btnHeight: sw * 0.1,
                       ),
                       20.height,
-                      // Sign up With social account Text
-                      CustomText(
-                          txt: 'Or sign up with social account',
-                          fontSize: sw * 0.03,
-                          fontFamily: 'Poppins',
-                          fontColor: AppColors.black),
-                      20.height,
-                      // Google And Facebook Button
-                      InkWell(
-                          onTap: () {
-                            _signupWithGoogle();
-                          },
-                          child: animatedContainer(
-                              lottieFile: LottieFiles.google,
-                              height: sw * 0.12,
-                              width: sw * 0.12,
-                              size: sw)),
-                      20.height,
                     ],
                   ),
                 ),
@@ -428,62 +447,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // method
-  uniqueUserName(String firstName) {
-    String cleanName = firstName.replaceAll(' ', '');
-    String shortName = cleanName.substring(0, min(8, cleanName.length));
-    userId = "${shortName.toLowerCase()}${uuid.v4().substring(0, 6)}";
-
-    print('Generated userId: $userId');
-  }
-
-  // Eligibility Check:
-  // If the calculated age is less than 18, an error message is occurred.
-  ageEligibility(DateTime selectedDate) async {
-    final today = DateTime.now();
-    try{
-      final age = today.year - selectedDate.year -
-          ((today.month < selectedDate.month || (today.month == selectedDate.month && today.day < selectedDate.day)) ? 1 : 0);
-
-      if (age < 18) {
-        setState(() {
-          dateValidator = 0;
-          dateErrorMessage = 'You must be at least 18 years old';
-        });
-      } else {
-        bool locationGranted = await requestLocationPermission();
-        if (locationGranted) {
-          setState(() => isLoading = true);
-          dateOfBirth = DateFormat.yMMMd().format(selectedDate);
-          uniqueUserName(nameController.text);
-          signUpMethod(nameController.text, emailController.text, passwordController.text);
-        } else {
-          showSnackBar("Warning⚠️: Please enable location permissions");
-        }
-      }
-    } catch (er){
-      showSnackBar("$er");
-    }
-  }
-
-
-  /// Helper function to show a Snackbar
-  void showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        showCloseIcon: true,
-        content: CustomText(
-          txt: message,
-          fontSize: 12,
-          fontColor: AppColors.white,
-        ),
-      ),
-    );
-  }
-
-  // " animatedContainer " is a designed container,
+  /// " animatedContainer " is a designed container,
   // which have build-in container and lottie file (animation file)
   animatedContainer(
       {required String lottieFile,

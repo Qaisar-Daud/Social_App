@@ -209,8 +209,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget _buildVideoItem(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return ListTile(
-      title: Text(data['title']),
-      subtitle: Text("Channel: ${data['channelTitle']}"),
+      title: Text(data['title'], style: TextStyle(fontSize: 13),),
+      subtitle: Text("Channel: ${data['channelTitle']}", style: TextStyle(fontSize: 10, color: AppColors.green),),
       leading: _buildThumbnail(data['thumbnail']),
       onTap: () => _navigateToVideo(data),
     );
@@ -290,6 +290,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   void dispose() {
+    _controller.pause();
     _controller.dispose();
     _refreshController.dispose();
     super.dispose();

@@ -87,7 +87,7 @@ class _CurrentUserUploadedPostsScreenState extends State<CurrentUserUploadedPost
                          // Post Content with "See More" functionality
                          postContent(sw, postMap),
                          /// Post Reactions Functionality
-                         postReactions(sw, postMap),
+                         // postReactions(sw, postMap),
                        ],
                      ),
                    );

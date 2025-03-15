@@ -119,12 +119,29 @@ class CommentSection extends StatelessWidget {
                   leading: CircleAvatar(
                     backgroundImage: NetworkImage(comment.userProfilePic),
                   ),
-                  title: Text(
-                    comment.userName,
-                    style: TextStyle(
-                      fontSize: sw * 0.03,
-                      color: AppColors.white,
-                    ),
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Commenter Name
+                      SizedBox(
+                        width: sw * 0.3,
+                        child: Text(
+                          comment.userName,
+                          style: TextStyle(
+                            fontSize: sw * 0.03,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                      // Time
+                      Text(
+                        '${comment.timestamp.day}/${comment.timestamp.month}/${comment.timestamp.year}',
+                        style: TextStyle(
+                          fontSize: sw * 0.024,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    ],
                   ),
                   subtitle: Text(
                     comment.commentText,
@@ -133,13 +150,13 @@ class CommentSection extends StatelessWidget {
                       color: AppColors.white,
                     ),
                   ),
-                  trailing: Text(
-                    '${comment.timestamp.day}/${comment.timestamp.month}/${comment.timestamp.year}',
-                    style: TextStyle(
-                      fontSize: sw * 0.024,
-                      color: AppColors.white,
-                    ),
-                  ),
+                  trailing: Consumer<PostProvider>(builder: (context, postProvider, child) {
+                    return InkWell(
+                        onTap: () {
+                          postProvider.deleteComment(uploaderUserId: postMap['userId'], postId: postMap['postId'], commentId: comment.commentId);
+                        },
+                        child: Icon(Icons.delete_forever, size: sw * 0.06, color: Colors.red,));
+                  },),
                 );
               },
             );

@@ -28,9 +28,9 @@ Widget menuButton(
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        CustomText(
-          txt: buttonMap.keys.first,
-          fontSize: sw * 0.036,
+        Text(
+          buttonMap.keys.first,
+          style: TextStyle(fontSize: sw * 0.036),
         ),
         Icon(
           buttonMap.values.first,

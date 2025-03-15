@@ -117,7 +117,7 @@ class OnBoardingScreen extends StatelessWidget {
                           fontFamily: 'Inter',
                           fontSize: sw * 0.03),
                     ),
-                    GestureDetector(
+                    InkWell(
                       onTap: () {
                         Navigator.pushReplacementNamed(
                             context, RouteNames.signupScreen);
@@ -128,7 +128,7 @@ class OnBoardingScreen extends StatelessWidget {
                             color: Colors.greenAccent,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.bold,
-                            fontSize: sw * 0.03),
+                            fontSize: sw * 0.038),
                       ),
                     ),
                   ],

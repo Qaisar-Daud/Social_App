@@ -17,14 +17,6 @@ Future<void> main() async {
     appleProvider: AppleProvider.deviceCheck,
   );
 
-  // for preloading or offline data
-
-  await Hive.initFlutter();
-  Hive.registerAdapter(PostAdapter()); // Register adapter for Post model
-  await Hive.openBox<Post>('posts');
-
-  await Hive.openBox<String>('likedPosts');
-
   runApp(const MyApp());
 }
 

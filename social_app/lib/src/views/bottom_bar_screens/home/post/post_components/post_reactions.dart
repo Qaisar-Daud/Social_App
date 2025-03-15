@@ -9,11 +9,14 @@ Widget postReactions(double sw, QueryDocumentSnapshot<Object?> postMap) {
   return Consumer<PostProvider>(
     builder: (context, postProvider, child) {
 
-      final isLiked = postProvider.isPostLiked(postMap['postId']);
+      // final isLiked = postProvider.isPostLiked(postMap['postId']);
+
+      // Access the liked status directly from the PostProvider
+      bool isLiked = postProvider.isPostLiked(postMap.id);
+
 
       return Row(
         children: [
-          // Like button
           IconButton(
             icon: Icon(
               isLiked ? Icons.favorite : Icons.heart_broken_outlined,
@@ -34,7 +37,6 @@ Widget postReactions(double sw, QueryDocumentSnapshot<Object?> postMap) {
               }
             },
           ),
-          // Comment button
           IconButton(
             icon: Icon(Icons.comment_outlined, size: sw * 0.064),
             onPressed: () {
@@ -48,7 +50,9 @@ Widget postReactions(double sw, QueryDocumentSnapshot<Object?> postMap) {
           // Share button
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () => postProvider.sharePost(postMap['postId']),
+            onPressed: () {
+
+            },
           ),
         ],
       );

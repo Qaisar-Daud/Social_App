@@ -27,7 +27,7 @@ class _VideoScreenState extends State<VideoScreen> {
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
-  final int _fetchLimit = 50;
+  final int _fetchLimit = 20;
   int _currentIndex = 0;
   List<DocumentSnapshot> _allVideos = [];
 
@@ -232,7 +232,7 @@ class _VideoScreenState extends State<VideoScreen> {
       ));
     }
 
-    return RichText(text: TextSpan(children: spans));
+    return RichText(text: TextSpan(children: spans, style: TextStyle(fontSize: 13, color: AppColors.blue),));
   }
   // List Of Videos
   Widget _buildVideoItem(DocumentSnapshot video) {
@@ -242,7 +242,7 @@ class _VideoScreenState extends State<VideoScreen> {
       minLeadingWidth: 100,
       minTileHeight: 70,
       title: highlightText(data['title'], _searchController.text),
-      subtitle: Text("Channel: ${data['channelTitle']}", style: const TextStyle(fontSize: 10),),
+      subtitle: Text("Channel: ${data['channelTitle']}", style: TextStyle(fontSize: 10, color: AppColors.green),),
       leading: SizedBox(
         width: 100,
         height: 60,

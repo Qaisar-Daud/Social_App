@@ -7,6 +7,7 @@ import 'package:social_app/src/views/bottom_bar_screens/home/post/post_component
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/post_reactions.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/user_Info_Tile.dart';
 import 'package:social_app/src/widgets/shimmer_loader.dart';
+import '../../../../firebase/current_user_info.dart';
 import '../../../../providers/post_provider.dart';
 import '../comment_section.dart';
 
@@ -24,6 +25,8 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
 
   final RefreshController _refreshController = RefreshController();
   final ScrollController _scrollController = ScrollController();
+
+  bool liked = false;
 
   final List<DocumentSnapshot> _posts = [];
   bool _isLoading = false;
@@ -57,6 +60,7 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
   }
 
   void _fetchPosts({bool loadMore = false, String? searchQuery}) async {
+
     if (_isLoading) return;
 
     setState(() {
@@ -137,7 +141,6 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
               Expanded(
                 child: Stack(
                   children: [
-                    // Data Values
                     SizedBox(
                       height: double.infinity,
                       child: SmartRefresher(
@@ -152,19 +155,24 @@ class _PostsScreenState extends State<PostsScreen> with WidgetsBindingObserver {
                           itemCount: _posts.length + (_hasMore ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == _posts.length) {
-                              // When Video List Reach To End.
+                              // When Post List Reach To End.
                               return const SizedBox();
                             }
-                            final post = _posts[index];
 
+                            final post = _posts[index];
                             bool isSaved = postProvider.isPostSaved(post.id);
 
-                            return _buildPostItem(sw, post as QueryDocumentSnapshot, postProvider, isSaved);
+                            return _buildPostItem(
+                              sw,
+                              post as QueryDocumentSnapshot,
+                              postProvider,
+                              isSaved,
+                            );
                           },
                         ),
                       ),
                     ),
-                    // DraggableScrollableSheet for comments
+                    /// DraggableScrollableSheet for comments
                     if (postProvider.isCommentSheetVisible && postProvider.selectedPostMap != null)
                       DraggableScrollableSheet(
                         initialChildSize: 0.9,

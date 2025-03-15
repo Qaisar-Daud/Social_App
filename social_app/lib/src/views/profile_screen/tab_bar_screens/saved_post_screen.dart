@@ -5,8 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
+import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/more_action.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/post_content.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/post_reactions.dart';
+import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/user_Info_Tile.dart';
 
 import '../../../helpers/constants.dart';
 import '../../../providers/post_provider.dart';
@@ -50,33 +52,39 @@ class _SavedPostsScreensState extends State<SavedPostsScreens> {
         try {
           if (postsSnapshot.connectionState == ConnectionState.waiting) {
             return buildShimmerLoader();
-          } else if (postsSnapshot.connectionState == ConnectionState.active) {
+          }
+          else if (postsSnapshot.connectionState == ConnectionState.active) {
             if (postsSnapshot.hasError) {
               debugPrint(postsSnapshot.hasError.toString());
               return Center(child: Text('Error: ${postsSnapshot.error}'));
-            } else if (postsSnapshot.data!.docs.isEmpty) {
+            }
+            else if (postsSnapshot.data!.docs.isEmpty) {
               return Center(
                 child: Text(
                   'No posts found',
                   style: TextStyle(fontSize: sw * 0.036),
                 ),
               );
-            } else if (postsSnapshot.hasData) {
+            }
+            else if (postsSnapshot.hasData) {
 
               final allPosts = postsSnapshot.data!.docs;
 
               // Fetch saved posts for the current user
               return StreamBuilder<QuerySnapshot>(
-                stream: firestore
-                    .collection('SavePost').where('userId', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                stream: firestore.collection('SavePost').where('userId', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
+
                 builder: (context, savedPostsSnapshot) {
                   if (savedPostsSnapshot.connectionState == ConnectionState.waiting) {
                     return buildShimmerLoader();
-                  } else if (savedPostsSnapshot.hasError) {
+                  }
+                  else if (savedPostsSnapshot.hasError) {
                     return Center(child: Text('Error: ${savedPostsSnapshot.error}'));
-                  } else if (savedPostsSnapshot.data!.docs.isEmpty) {
+                  }
+                  else if (savedPostsSnapshot.data!.docs.isEmpty) {
                     return Center(child: Text('No posts saved yet', style: TextStyle(fontSize: sw * 0.036),),);
-                  } else if (savedPostsSnapshot.hasData) {
+                  }
+                  else if (savedPostsSnapshot.hasData) {
 
                     final savedPosts = savedPostsSnapshot.data!.docs;
 
@@ -106,100 +114,51 @@ class _SavedPostsScreensState extends State<SavedPostsScreens> {
                           return SizedBox.shrink(); // Skip rendering for null posts
                         }
 
-                        final userProfilePic = postData['userProfilePic'] as String?;
-                        final userName = postData['userName'] as String?;
-                        final userId = postData['userId'] as String?;
-
                         return Card(
                           margin: EdgeInsets.only(top: sw * 0.04),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // User Information
-                              ListTile(
-                                isThreeLine: true,
-                                contentPadding: EdgeInsets.only(
-                                  top: sw * 0.02,
-                                  left: sw * 0.04,
-                                ),
-                                horizontalTitleGap: sw * 0.02,
-                                minVerticalPadding: sw * 0.02,
-                                minLeadingWidth: sw * 0.16,
-                                minTileHeight: sw * 0.2,
-                                titleAlignment: ListTileTitleAlignment.threeLine,
-                                titleTextStyle: TextStyle(
-                                    fontSize: sw * 0.034, color: AppColors.black),
-                                subtitleTextStyle: TextStyle(
-                                    fontSize: sw * 0.022, color: AppColors.black),
-                                leading: Container(
-                                  width: sw * 0.14,
-                                  height: sw * 0.14,
-                                  clipBehavior: Clip.hardEdge,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.aqua,
+                              userInfoTile(sw: sw, postMap: postMap, menuItemButtons: [
+                                // Remove Saved Post
+                                PopupMenuItem(
+                                  height: sw * 0.06,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: sw * 0.02,
+                                    vertical: sw * 0.01,
                                   ),
-                                  child: Image.network(
-                                    userProfilePic!,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: menuButton(sw: sw, onTap: () async {
+                                    final postId = savedPostsData[index].id;
+                                    await postProvider.removeSavedPost(postId);
+                                  }, buttonMap: {
+                                    'remove': Icons.delete,
+                                  }),
                                 ),
-                                title: Text(userName ?? 'Unknown User'),
-                                subtitle: Text(userId ?? 'Unknown User ID'),
-                                trailing: PopupMenuButton(
-                                  tooltip: 'Add Media',
-                                  popUpAnimationStyle: AnimationStyle(
-                                    duration: const Duration(seconds: 1),
-                                    reverseDuration: const Duration(milliseconds: 200),
-                                  ),
-                                  itemBuilder: (context) => [
-                                    // Remove Saved Post
-                                    PopupMenuItem(
-                                      onTap: () async {
-                                        final postId = savedPostsData[index].id;
-                                        await postProvider.removeSavedPost(postId);
-                                      },
-                                      height: sw * 0.06,
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: sw * 0.02,
-                                        vertical: sw * 0.01,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          CustomText(
-                                            txt: 'Remove',
-                                            fontSize: sw * 0.036,
-                                          ),
-                                          Icon(
-                                            Icons.delete,
-                                            size: sw * 0.05,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              ]),
                               // Post Content with "See More" functionality
                               postContent(sw, postMap),
-                              // Post Reactions Functionality
-                              postReactions(sw, postMap),
+                              /// Post Reactions Functionality
+                              // postReactions(sw, postMap),
                             ],
                           ),
                         );
                       },
                     );
-                  } else if (savedPostsSnapshot.connectionState == ConnectionState.none) {
+                  }
+                  else if (savedPostsSnapshot.connectionState == ConnectionState.none) {
                     return const Center(child: Text('No Internet Connection,'));
-                  } else {
+                  }
+                  else {
                     return const Center(child: Text('No Data Found!'));
                   }
                 },
               );
-            } else if (postsSnapshot.connectionState == ConnectionState.none) {
+            }
+            else if (postsSnapshot.connectionState == ConnectionState.none) {
               return const Center(child: Text('No Internet Connection,'));
-            } else {
+            }
+            else {
               return const Center(child: Text('No Data Found!'));
             }
           }

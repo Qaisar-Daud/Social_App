@@ -1,7 +1,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:social_app/src/firebase/current_user_info.dart';
 import 'package:uuid/uuid.dart';
@@ -11,11 +11,14 @@ import '../models/post_model/post_model.dart';
 
 class PostProvider extends ChangeNotifier {
 
+  String _postId = '';
+
   /// ******************[Post Expansion Methods]*************************************
 
   final Map<String, bool> _expandedPosts = {};
 
   void initializePost(String postId) {
+    _postId = postId;
     _expandedPosts.putIfAbsent(postId, () => false);
   }
 
@@ -83,58 +86,18 @@ class PostProvider extends ChangeNotifier {
 
   /// ********************[Post Like Methods]***********************************
 
-  List<String> _likedPosts = [];
-  bool _isLoading = false;
-
   // Initialize liked posts when the provider is created
 
   PostProvider() {
-    _loadLikedPosts(); // Load liked posts from Hive on startup
-    fetchLikedPosts(); // Fetch liked posts from Firestore
+    // _loadLikedPosts(); // Load liked posts from Hive on startup
+    // fetchLikedPosts(); // Fetch liked posts from Firestore
   }
+
+  List<String> _likedPosts = [];
+
+  bool _isLoading = false;
 
   List<String> get likedPosts => _likedPosts;
-
-  // Load liked posts from Hive
-  void _loadLikedPosts() {
-    final box = Hive.box<String>('likedPosts');
-    _likedPosts = box.values.toList();
-    debugPrint('Loaded liked posts from Hive: $_likedPosts');
-    notifyListeners();
-  }
-  // Save liked posts to Hive
-  void _saveLikedPosts() {
-    final box = Hive.box<String>('likedPosts');
-    box.clear();
-    for (final postId in _likedPosts) {
-      box.add(postId); // Add each postId to the box
-    }
-    debugPrint('Saved liked posts to Hive: $_likedPosts');
-  }
-
-  Future<void> fetchLikedPosts() async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final currentUserUid = _auth.currentUser!.uid;
-      final querySnapshot = await _firestore
-          .collectionGroup('Post')
-          .where('likedBy', arrayContains: userNameId)
-          .get();
-
-      _likedPosts = querySnapshot.docs
-          .map((doc) => doc['postId'] as String)
-          .toList();
-      debugPrint('Fetched liked posts from Firestore: $_likedPosts');
-      _saveLikedPosts(); // Save to Hive after fetching
-    } catch (e) {
-      debugPrint('Error fetching liked posts: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   // Check if a post is liked
   bool isPostLiked(String postId) {
@@ -144,7 +107,6 @@ class PostProvider extends ChangeNotifier {
   // Like a post
   Future<void> likePost(String uploaderUserId, String postId) async {
     try {
-      final currentUserUid = _auth.currentUser!.uid;
       final postDocRef = _firestore
           .collection('Posts')
           .doc(uploaderUserId)
@@ -167,7 +129,6 @@ class PostProvider extends ChangeNotifier {
   // Unlike a post
   Future<void> unlikePost(String uploaderUserId, String postId) async {
     try {
-      final currentUserUid = _auth.currentUser!.uid;
       final postDocRef = _firestore
           .collection('Posts')
           .doc(uploaderUserId)
@@ -187,9 +148,52 @@ class PostProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> isUserLikedPost(String postId) async {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+          .collection('Posts') // Adjust the collection path if necessary
+          .doc(postId)
+          .get();
+
+      if (snapshot.exists) {
+        List<String> likedBy = snapshot.data()?['likedBy'] ?? [];
+
+        if (likedBy.contains(userNameId)) {
+          // Add to liked posts if the user has liked the post
+          if (!_likedPosts.contains(postId)) {
+            _likedPosts.add(postId);
+          }
+        } else {
+          // Remove from liked posts if the user has unliked the post
+          _likedPosts.remove(postId);
+        }
+
+        notifyListeners(); // Notify listeners to update the UI
+      }
+    } catch (e) {
+      debugPrint('Error checking if user liked post: $e');
+    }
+  }
+
+  // Future<bool> isUserLikedPost(String postId) async {
+  //   DocumentSnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+  //       .collection('Post') // Change if 'Post' is a sub Collection
+  //       .doc(postId)
+  //       .get();
+  //
+  //   if (snapshot.exists) {
+  //
+  //     List<String> likedBy = snapshot.data()?['likedBy'] ?? [];
+  //
+  //     return likedBy.contains(userNameId); // Check if user exists in likedBy array
+  //   }
+  //
+  //   return false; // Post does not exist
+  // }
+
   /// *********************[Post Comments Methods]*******************************
 
-  /// add comments
+  // add comments
   Future<void> addComment({
     required String uploaderUserId,
     required String postId,
@@ -200,8 +204,10 @@ class PostProvider extends ChangeNotifier {
     final currentUserUid = currentUser.uid;
 
     // Log the document path for debugging
-    print('Uploader User ID: $uploaderUserId');
-    print('Post ID: $postId');
+    if (kDebugMode) {
+      print('Uploader User ID: $uploaderUserId');
+      print('Post ID: $postId');
+    }
 
     // Get the post document reference
     final postDocRef = _firestore
@@ -213,14 +219,18 @@ class PostProvider extends ChangeNotifier {
     // Check if the post exists
     final postDoc = await postDocRef.get();
     if (!postDoc.exists) {
-      print('Post does not exist');
+      if (kDebugMode) {
+        print('Post does not exist');
+      }
       return;
     }
 
     // Get the current user's data (e.g., name, profile picture)
     final userDoc = await _firestore.collection('Users').doc(currentUserUid).get();
     if (!userDoc.exists) {
-      print('User does not exist');
+      if (kDebugMode) {
+        print('User does not exist');
+      }
       return;
     }
 
@@ -247,10 +257,7 @@ class PostProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<CommentModel>> fetchComments({
-    required String uploaderUserId,
-    required String postId,
-  }) async {
+  Future<List<CommentModel>> fetchComments({required String uploaderUserId, required String postId,}) async {
     final commentsSnapshot = await _firestore
         .collection('Posts')
         .doc(uploaderUserId)
@@ -277,7 +284,7 @@ class PostProvider extends ChangeNotifier {
         .doc(uploaderUserId)
         .collection('Post')
         .doc(postId)
-        .collection('Comments')
+        .collection('CommentsBy')
         .doc(commentId)
         .delete();
 
@@ -298,7 +305,6 @@ class PostProvider extends ChangeNotifier {
 
   bool _isCommentSheetVisible = false;
   QueryDocumentSnapshot<Object?>? _selectedPostMap;
-
 
   bool get isCommentSheetVisible => _isCommentSheetVisible;
 
@@ -384,7 +390,7 @@ class PostProvider extends ChangeNotifier {
   }
 
   Future<void> loadCachedPosts() async {
-    final box = Hive.box<Post>('posts');
+    Hive.box<Post>('posts');
     notifyListeners();
   }
 }

@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Helper function to show a Snackbar
+  /// Helper function to show a Snack bar
   void showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -100,21 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // google signIn
-  Future<void> _signupWithGoogle() async {
-    try{
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      await firebaseAuth.signInWithCredential(credential);
-    } catch (er){
-      showSnackBar("Account Not Selected");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final double sw = MediaQuery.sizeOf(context).width;
@@ -122,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return SafeArea(
         top: true,
         child: Scaffold(
-            backgroundColor: AppColors.white.withOpacity(0.95),
+            backgroundColor: AppColors.white.withAlpha(240),
             body: Stack(
               children: [
                 SingleChildScrollView(
@@ -217,24 +202,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             btnHeight: sw * 0.1,
                           ),
                           20.height,
-                          // Sign up With social account Text
-                          CustomText(
-                              txt: 'Or sign up with social account',
-                              fontSize: sw * 0.03,
-                              fontFamily: 'Poppins',
-                              fontColor: AppColors.black),
-                          20.height,
-                          // Google And Facebook Button
-                          InkWell(
-                              onTap: () {
-                                _signupWithGoogle();
-                              },
-                              child: animatedContainer(
-                                  lottieFile: LottieFiles.google,
-                                  height: sw * 0.12,
-                                  width: sw * 0.12,
-                                  size: sw)),
-                          20.height
                         ],
                       ),
                     ),
