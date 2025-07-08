@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
+import 'package:social_app/src/models/video_model/file_extension.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -33,80 +34,131 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   TextEditingController postTextController = TextEditingController();
 
+  /// Take Thumbnail From Video (Website: Medium Code)
+  /// Start
+  /// generate jpeg thumbnail
+
+
+  // 1) Create an picker object for our ImagePicker
+  final ImagePicker picker = ImagePicker();
+
+  // 2) A file object which can be null
+  File? file;
+
+  // 3) An async call to a pick media file
+  Future<void> pickMedia() async {
+    final mediaFile = await picker.pickMedia();
+
+    if (mediaFile != null) {
+      final file = File(mediaFile.path);
+      setState(() {
+        this.file = file;
+      });
+    } else {
+      // User canceled the picker
+    }
+  }
+
+  Future<dynamic> _generateThumbnail(File file) async {
+    final thumbnailAsUint8List = await VideoThumbnail.thumbnailData(
+      video: file.path,
+      imageFormat: ImageFormat.JPEG,
+      maxWidth:
+      320, // specify the width of the thumbnail, let the height auto-scaled to keep the source aspect ratio
+      quality: 50,
+    );
+    return thumbnailAsUint8List!;
+  }
+
+  Future<ImageProvider<Object>>? _imageProvider(File file) async {
+    if (file.fileType == FileType.video) {
+      final thumbnail = await _generateThumbnail(file);
+      return MemoryImage(thumbnail!);
+    } else if (file.fileType == FileType.image) {
+      return FileImage(file);
+    } else {
+      throw Exception("Unsupported media format");
+    }
+
+  }
+
+  /// End
+
+
   /// New Code Select Media
   File? mediaFile;
   File? thumbnailFile;
   List<File> multipleMediaFiles = [];
-  final ImagePicker picker = ImagePicker();
+  // final ImagePicker picker = ImagePicker();
 
-  Future<void> pickMedia({
-    required ImageSource source,
-    bool allowMultiple = false,
-    bool allowVideo = true,
-    bool allowImage = true,
-    bool compressImage = false,
-    bool generateThumbnail = false,
-    double? maxDuration, // in seconds
-    double? maxSizeMB,
-  }) async {
-    try {
-      if (allowMultiple) {
-        /// Handle multiple images/video/both selections
-        final List<XFile>? files = await picker.pickMultipleMedia(
-          maxWidth: compressImage ? 1000 : null,
-          maxHeight: compressImage ? 1000 : null,
-          imageQuality: compressImage ? 80 : 100,
-        );
-
-        if (files != null && files.isNotEmpty) {
-          multipleMediaFiles = await Future.wait(files.map((file) async {
-            return await _processMediaFile(
-              File(file.path),
-              isVideo: false,
-              compress: compressImage,
-            );
-          }));
-          setState(() {});
-        }
-      } else {
-        // Handle single selection (image or video)
-        final XFile? file = allowVideo
-            ? await picker.pickVideo(source: source)
-            : await picker.pickImage(source: source);
-
-        if (file != null) {
-          final bool isVideo = file.mimeType?.startsWith('video/') ?? false;
-
-          // Check file size
-          if (maxSizeMB != null && (await file.length()) > maxSizeMB * 1024 * 1024) {
-            snackBarMessage("File size exceeds ${maxSizeMB}MB limit");
-            return;
-          }
-
-          // Check video duration if needed
-          if (isVideo && maxDuration != null) {
-            final videoDuration = await _getVideoDuration(file);
-            if (videoDuration > maxDuration) {
-              snackBarMessage("Video exceeds maximum duration of ${maxDuration}s");
-              return;
-            }
-          }
-
-          mediaFile = await _processMediaFile(
-            File(file.path),
-            isVideo: isVideo,
-            compress: compressImage && !isVideo,
-            generateThumbnail: generateThumbnail,
-          );
-
-          setState(() {});
-        }
-      }
-    } catch (e) {
-      snackBarMessage("Error: ${e.toString()}");
-      debugPrint("Media picker error: $e");
-    }
-  }
+  // Future<void> pickMedia({
+  //   required ImageSource source,
+  //   bool allowMultiple = false,
+  //   bool allowVideo = true,
+  //   bool allowImage = true,
+  //   bool compressImage = false,
+  //   bool generateThumbnail = false,
+  //   double? maxDuration, // in seconds
+  //   double? maxSizeMB,
+  // }) async {
+  //   try {
+  //     if (allowMultiple) {
+  //       /// Handle multiple images/video/both selections
+  //       final List<XFile>? files = await picker.pickMultipleMedia(
+  //         maxWidth: compressImage ? 1000 : null,
+  //         maxHeight: compressImage ? 1000 : null,
+  //         imageQuality: compressImage ? 80 : 100,
+  //       );
+  //
+  //       if (files != null && files.isNotEmpty) {
+  //         multipleMediaFiles = await Future.wait(files.map((file) async {
+  //           return await _processMediaFile(
+  //             File(file.path),
+  //             isVideo: false,
+  //             compress: compressImage,
+  //           );
+  //         }));
+  //         setState(() {});
+  //       }
+  //     } else {
+  //       // Handle single selection (image or video)
+  //       final XFile? file = allowVideo
+  //           ? await picker.pickVideo(source: source)
+  //           : await picker.pickImage(source: source);
+  //
+  //       if (file != null) {
+  //         final bool isVideo = file.mimeType?.startsWith('video/') ?? false;
+  //
+  //         // Check file size
+  //         if (maxSizeMB != null && (await file.length()) > maxSizeMB * 1024 * 1024) {
+  //           snackBarMessage("File size exceeds ${maxSizeMB}MB limit");
+  //           return;
+  //         }
+  //
+  //         // Check video duration if needed
+  //         if (isVideo && maxDuration != null) {
+  //           final videoDuration = await _getVideoDuration(file);
+  //           if (videoDuration > maxDuration) {
+  //             snackBarMessage("Video exceeds maximum duration of ${maxDuration}s");
+  //             return;
+  //           }
+  //         }
+  //
+  //         mediaFile = await _processMediaFile(
+  //           File(file.path),
+  //           isVideo: isVideo,
+  //           compress: compressImage && !isVideo,
+  //           generateThumbnail: generateThumbnail,
+  //         );
+  //
+  //         setState(() {});
+  //       }
+  //     }
+  //   } catch (e) {
+  //     snackBarMessage("Error: ${e.toString()}");
+  //     debugPrint("Media picker error: $e");
+  //   }
+  // }
 
   Future<double> _getVideoDuration(XFile videoFile) async {
     try {
@@ -338,8 +390,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       ),
     );
   }
-
-
 
   // Updated media picker function
   Future<void> pickMultipleMedia() async {
@@ -605,6 +655,36 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           ),
                         ),
                       ),
+                      /// New
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: 28.0,
+                          left: 10,
+                          right: 10,
+                          bottom: 30,
+                        ),
+                        child: file == null
+                            ? const NoMediaPicked()
+                            : FutureBuilder<ImageProvider>(
+                            future: _imageProvider(file!),
+                            builder: (context, snapshot) {
+                              if (snapshot.data != null && snapshot.connectionState == ConnectionState.done ) {
+                                return Container(
+                                  height: 300,
+                                  width: MediaQuery.of(context).size.width,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.black),
+                                    borderRadius: BorderRadius.circular(9),
+                                    image: DecorationImage(
+                                      fit: BoxFit.cover,
+                                      image: snapshot.data!,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const NoMediaPicked();
+                            }),
+                      ),
                       /// Pre Code
                       // Main: Post Content Shown Here [Text, Image, Video] it maybe multiple
                       // Expanded(
@@ -678,7 +758,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           // From Gallery
                           IconButton(onPressed: () {
 
-                            pickMultipleMedia();
+                            // pickMultipleMedia();
+
+                            pickMedia();
 
                           }, icon: Icon(Icons.image_outlined, size: sw * 0.07, color: Colors.green,),),
                           // From Camera
@@ -787,6 +869,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   //   );
   // }
 
+}
+
+class NoMediaPicked extends StatelessWidget {
+  const NoMediaPicked({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 300,
+      width: MediaQuery.of(context).size.width,
+      decoration: BoxDecoration(
+          border: Border.all(
+            color: Colors.black,
+          ),
+          borderRadius: BorderRadius.circular(9)),
+      child: const Center(child: Text('Click the button to pick media')),
+    );
+  }
 }
 
 Widget _buildVideoPreview(BuildContext context,File thumbnail, File videoFile) {
