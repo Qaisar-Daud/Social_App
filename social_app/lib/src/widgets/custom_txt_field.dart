@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../helpers/constants.dart';
 
-
 class CustomTxtField extends StatelessWidget {
   final IconData iconData;
   final String hintTxt;
-  final bool toHide;
-  final TextInputType keyboardType;
+  final bool? toHide;
+  final TextInputType? keyboardType;
   final TextEditingController textController;
   final FormFieldValidator<String>? fieldValidator;
   final IconButton? suffixIcon;
@@ -17,8 +16,8 @@ class CustomTxtField extends StatelessWidget {
     super.key,
     required this.iconData,
     required this.hintTxt,
-    required this.toHide,
-    required this.keyboardType,
+    this.toHide,
+    this.keyboardType,
     required this.textController,
     required this.fieldValidator,
     this.suffixIcon,
@@ -29,11 +28,12 @@ class CustomTxtField extends StatelessWidget {
   Widget build(BuildContext context) {
     final double sw = MediaQuery.sizeOf(context).width;
     return TextFormField(
-      obscureText: toHide,
+      obscureText: toHide ?? false,
       keyboardType: keyboardType,
       textInputAction: TextInputAction.next,
       controller: textController,
       validator: fieldValidator,
+      onChanged: onChange,
       obscuringCharacter: "*",
       style: TextStyle(
         fontFamily: 'Poppins',
@@ -43,7 +43,7 @@ class CustomTxtField extends StatelessWidget {
       decoration: InputDecoration(
         errorStyle: TextStyle(fontSize: sw * 0.028, fontFamily: 'Poppins'),
         errorMaxLines: 2,
-        errorBorder: OutlineInputBorder(
+        errorBorder: const OutlineInputBorder(
           borderSide: BorderSide(width: 0.1),
         ),
         label: Icon(
@@ -67,10 +67,8 @@ class CustomTxtField extends StatelessWidget {
         suffixIcon: suffixIcon,
       ),
       undoController: UndoHistoryController(
-          value: const UndoHistoryValue(
-        canRedo: true,
-        canUndo: true,
-      )),
+        value: UndoHistoryValue(canRedo: true, canUndo: true),
+      ),
     );
   }
 }

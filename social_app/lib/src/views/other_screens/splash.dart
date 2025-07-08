@@ -70,83 +70,86 @@ class _SplashScreenState extends State<SplashScreen>
     // For Screen Resolution
     final double sw = MediaQuery.sizeOf(context).width;
 
-    return Scaffold(
-      backgroundColor: Colors.black, // Background color
-      body: Stack(
-        children: [
-          // Diagonal lines background
-          CustomPaint(
-            size: const Size(double.infinity, double.infinity),
-            painter: DiagonalLinesPainter(),
-          ),
-          Center(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Text(
-                        "Glintor",
-                        style: TextStyle(
-                          shadows: [
-                            Shadow(
-                              blurRadius: sw * 0.04,
-                              color: Colors.white,
-                              offset: const Offset(0, 6),
-                            ),
-                            BoxShadow(
-                              blurRadius: sw * 0.06,
-                              color: AppColors.yellow,
-                              spreadRadius: sw * 0.8,
-                            ),
-                          ],
-                          fontSize: sw * 0.1,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                          color: Colors.white,
-                          // Text color
-                          letterSpacing: sw * 0.014,
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: Colors.black, // Background color
+        body: Stack(
+          children: [
+            // Diagonal lines background
+            CustomPaint(
+              size: const Size(double.infinity, double.infinity),
+              painter: DiagonalLinesPainter(),
+            ),
+            Center(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Text(
+                          "Glintor",
+                          style: TextStyle(
+                            shadows: [
+                              Shadow(
+                                blurRadius: sw * 0.04,
+                                color: Colors.white,
+                                offset: const Offset(0, 6),
+                              ),
+                              BoxShadow(
+                                blurRadius: sw * 0.06,
+                                color: AppColors.yellow,
+                                spreadRadius: sw * 0.8,
+                              ),
+                            ],
+                            fontSize: sw * 0.1,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter',
+                            color: Colors.white,
+                            // Text color
+                            letterSpacing: sw * 0.014,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-          // Text: Powered By
-          Positioned(
-            bottom: sw * 0.06,
-            right: sw * 0.03,
-            child: Text(
-              "Powered By: Glintor",
-              style: TextStyle(
-                shadows: [
-                  Shadow(
-                    blurRadius: sw * 0.04,
-                    color: Colors.white,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    blurRadius: sw * 0.06,
-                    color: AppColors.yellow,
-                    spreadRadius: sw * 0.8,
-                  ),
-                ],
-                fontSize: sw * 0.02,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Serif',
-                color: Colors.white,
-                // Text color
-                letterSpacing: sw * 0.014,
+                  );
+                },
               ),
             ),
-          ),
-        ],
+            // Text: Powered By
+            Positioned(
+              bottom: sw * 0.06,
+              right: sw * 0.03,
+              child: Text(
+                "Powered By: Glintor",
+                style: TextStyle(
+                  shadows: [
+                    Shadow(
+                      blurRadius: sw * 0.04,
+                      color: Colors.white,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      blurRadius: sw * 0.06,
+                      color: AppColors.yellow,
+                      spreadRadius: sw * 0.8,
+                    ),
+                  ],
+                  fontSize: sw * 0.02,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Serif',
+                  color: Colors.white,
+                  // Text color
+                  letterSpacing: sw * 0.014,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

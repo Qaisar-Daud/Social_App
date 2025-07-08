@@ -1,17 +1,13 @@
-import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
-import 'package:uuid/uuid.dart';
-
+import 'package:social_app/src/providers/auth_provider.dart';
+import '../../controllers/auth_controller.dart';
 import '../../helpers/constants.dart';
 import '../../helpers/form_validators.dart';
+import '../../providers/password_validator_provider.dart';
 import '../../myapp.dart';
 import '../../providers/textfield_validation_provider.dart';
 import '../../utils/routes/routes_name.dart';
@@ -19,6 +15,7 @@ import '../../widgets/custom_btn.dart';
 import '../../widgets/custom_txt.dart';
 import '../../widgets/custom_txt_field.dart';
 import '../../widgets/date_time_picker.dart';
+import 'login.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -28,9 +25,6 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  bool permissionAllow = false;
-  Map<String, dynamic> addressCodes = {};
-  Map<String, dynamic> userAddress = {};
 
   // Form Provider Validate Signup Form
   final FormProvider formKey = FormProvider();
@@ -39,255 +33,31 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool toHide = true;
 
+  Map<String, dynamic> address = {};
+
   TextEditingController nameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController dateOfBirthController = TextEditingController();
 
-  /// ***************[ Unique User Name Generation Method] **********************
-  // for random id generation
-  final Uuid uuid = const Uuid();
-  String userId = '';
-
-  /// **********[Date Of Birth]**************************************************
-
-  // It is use to Check Condition
-  int dateValidator = 1;
-
-  String dateErrorMessage = 'Date Of Birth Is Required';
-
-  String dateOfBirth = '';
-
   DateTime? newDate;
-
-  /// User Account Creation Method After Checking All Validation
-
-  FirebaseAuth firebaseAuth = FirebaseAuth.instance;
-  FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-  // method
-  uniqueUserName(String firstName) {
-    String cleanName = firstName.replaceAll(' ', '');
-    String shortName = cleanName.substring(0, min(8, cleanName.length));
-    userId = "${shortName.toLowerCase()}${uuid.v4().substring(0, 6)}";
-
-    print('Generated userId: $userId');
-  }
-
-  /// Eligibility Check:
-  // If the calculated age is less than 18, an error message is occurred.
-  ageEligibility(DateTime selectedDate) async {
-
-    final today = DateTime.now();
-    try{
-      final age = today.year - selectedDate.year -
-          ((today.month < selectedDate.month || (today.month == selectedDate.month && today.day < selectedDate.day)) ? 1 : 0);
-
-      if (age < 18) {
-        setState(() {
-          dateValidator = 0;
-          dateErrorMessage = 'You must be at least 18 years old';
-        });
-      } else {
-        bool locationGranted = await requestLocationPermission();
-        if (locationGranted) {
-          setState(() => isLoading = true);
-          dateOfBirth = DateFormat.yMMMd().format(selectedDate);
-          uniqueUserName(nameController.text);
-          signUpMethod(nameController.text, emailController.text, passwordController.text);
-        } else {
-          showSnackBar("Warning⚠️: Please enable location permissions");
-        }
-      }
-    } catch (er){
-      showSnackBar("$er");
-    }
-  }
-
-  Future<void> signUpMethod(String name, String email, String password) async {
-    print('Hello');
-    setState(() => isLoading = true);
-
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-
-      UserCredential userCredential = await firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      User? user = userCredential.user;
-      if (user == null) {
-        showSnackBar("Account creation failed. Please try again.");
-        return;
-      }
-
-      await user.updateDisplayName(name);
-      await user.updatePhotoURL(defaultProfile);
-
-      String uid = user.uid;
-      Map<String, dynamic> userData = {
-        'fullName': name,
-        'bio': "Every Thing Is Temporary",
-        'imgUrl': defaultProfile,
-        'userId': userId, // Corrected
-        'email': email,
-        'password': password,
-        'dateOfBirth': dateOfBirth,
-        'addressCode': {
-          'longitude': position.longitude,
-          'latitude': position.latitude,
-        },
-        'address': userAddress,
-        'uid': uid,
-        'status': 'unavailable',
-      };
-
-      await firestore.collection('Users').doc(uid).set(userData);
-
-      Navigator.pushReplacementNamed(context, RouteNames.mainScreen);
-    } catch (error) {
-      showSnackBar("Error: $error");
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
-
-  /// *******************[User Location]*****************************************
-  // TODO: Get Current Location Of Device
-
-  Future<bool> requestLocationPermission() async {
-    // Check if GPS (Location Services) is enabled
-    bool isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
-
-    if (!isLocationServiceEnabled) {
-      bool openSettings = await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("Enable Location Services"),
-          content: const Text("Your GPS is off. Please enable it to continue."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false), // Close popup
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context, true); // Close popup
-                await Geolocator.openLocationSettings(); // Open GPS settings
-              },
-              child: const Text("Open Settings"),
-            ),
-          ],
-        ),
-      );
-
-      // If user does not enable GPS, return false
-      if (!openSettings) {
-        return false;
-      }
-
-      // Wait until the user enables GPS
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Recheck if GPS is enabled after user returns
-      isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!isLocationServiceEnabled) {
-        return false;
-      }
-    }
-
-    // Request location permissions
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          duration: Duration(seconds: 7),
-          dismissDirection: DismissDirection.endToStart,
-          showCloseIcon: true,
-          behavior: SnackBarBehavior.floating,
-          content: CustomText(
-            txt: "Warning⚠️: Location permissions are denied.",
-            fontSize: 12,
-            fontColor: Colors.white,
-          ),
-        ));
-        return false;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        duration: Duration(seconds: 7),
-        dismissDirection: DismissDirection.endToStart,
-        showCloseIcon: true,
-        behavior: SnackBarBehavior.floating,
-        content: CustomText(
-          txt:
-          "Warning⚠️: Location permissions are permanently denied.\nPlease go to app settings and enable location permissions.",
-          fontSize: 12,
-          fontColor: Colors.white,
-        ),
-      ));
-      return false;
-    }
-
-    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-      try {
-        Position position = await Geolocator.getCurrentPosition();
-        final longitude = position.longitude;
-        final latitude = position.latitude;
-
-        addressCodes.addAll({
-          "longitude": longitude,
-          "latitude": latitude,
-        });
-
-        print("My Coordinates: $longitude, $latitude");
-
-        return true;
-      } catch (e) {
-        print("Error getting location: $e");
-        return false;
-      }
-    }
-
-    return false;
-  }
-
-  // ******************[Location Section End ]**********************************
-
-  /// Helper function to show a Snackbar
-  void showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        showCloseIcon: true,
-        content: CustomText(
-          txt: message,
-          fontSize: 12,
-          fontColor: AppColors.white,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
 
+    // final locationProvider = Provider.of<LocationProvider>(context);
+    // final ipLocation = locationProvider.location;
+
     final double sw = MediaQuery.sizeOf(context).width;
 
-    return SafeArea(
-      top: true,
-      child: Scaffold(
-        backgroundColor: AppColors.white.withAlpha(240),
-        body: Stack(
+    final model = Provider.of<AuthSignUpProvider>(context, listen: false);
+
+    return Scaffold(
+      backgroundColor: AppColors.white.withAlpha(240),
+      body: SafeArea(
+        child: Stack(
           children: [
             SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: sw * 0.05),
                 child: Form(
@@ -296,11 +66,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       50.height,
                       // method calling
-                      animatedContainer(
-                          lottieFile: LottieFiles.signup,
-                          height: sw * 0.7,
-                          width: sw * 0.7,
-                          size: sw),
+                      LottieAnimatedContainer(lottiePath: LottieFiles.signup,),
                       20.height,
                       // Login Txt
                       CustomText(
@@ -331,58 +97,68 @@ class _SignupScreenState extends State<SignupScreen> {
                         onChange: formKey.setEmail,
                       ),
                       20.height,
-                      // User Password
-                      CustomTxtField(
-                        iconData: Icons.password,
-                        hintTxt: 'Enter Here Password',
-                        toHide: toHide,
-                        keyboardType: TextInputType.emailAddress,
-                        textController: passwordController,
-                        fieldValidator: Validator.validatePassword,
-                        onChange: formKey.setPassword,
-                        suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() => toHide = !toHide);
-                            },
+                      /// User Password
+                      Consumer<PasswordValidatorProvider>(builder: (context, value, child) {
+                        return CustomTxtField(
+                          iconData: Icons.password,
+                          hintTxt: 'Enter Here Password',
+                          toHide: value.obSecureText,
+                          keyboardType: TextInputType.visiblePassword,
+                          textController: passwordController,
+                          fieldValidator: (val) => context.read<PasswordValidatorProvider>().isStrong
+                              ? null
+                              : 'Password does not meet strength requirements',
+                          onChange: (val) {
+                            formKey.setPassword(val); // Your own logic
+                            context.read<PasswordValidatorProvider>().password = val; // Provider
+                          },
+                          suffixIcon: IconButton(
+                            onPressed: value.toggleObSecureText,
                             icon: Icon(
-                              toHide == true
-                                  ? CupertinoIcons.eye
-                                  : CupertinoIcons.eye_slash,
+                              value.obSecureText ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
                               size: sw * 0.05,
-                            )),
+                            ),
+                          ),
+                        );
+                      },),
+                      10.height,
+                      Consumer<PasswordValidatorProvider>(
+                        builder: (context, validator, child) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              PasswordCreationRequirements(label: "Min 8 characters", passed: validator.hasMinLength),
+                              PasswordCreationRequirements(label: '1 uppercase letter', passed: validator.hasUppercase),
+                              PasswordCreationRequirements(label: '1 lowercase letter',passed: validator.hasLowercase),
+                              PasswordCreationRequirements(label: '1 number', passed: validator.hasDigit),
+                              PasswordCreationRequirements(label: '1 special char (@\$!%*?&)', passed: validator.hasSpecialChar),
+                              const SizedBox(height: 6),
+                              if (passwordController.text.isNotEmpty ) Text(
+                                validator.isStrong ? '✅ Strong Password' : '❌ Weak Password',
+                                style: TextStyle(
+                                  color: validator.isStrong ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       20.height,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          CustomText(
-                            txt: 'Select Date Of Birth',
-                            fontSize: sw * 0.037,
-                            fontColor: AppColors.green,
-                          ),
-                          // Date Of Birth Button
-                          IconButton(
-                              onPressed: () async {
-                                newDate = await ShowDateTimePicker.selectDate(
-                                    context,
-                                    DateTime.now(),
-                                    dateOfBirthController);
-                              },
-                              icon: Icon(
-                                CupertinoIcons.calendar,
-                                size: sw * 0.06,
-                              )),
-                        ],
-                      ),
-                      if (dateValidator == 0)
-                        Align(
-                          alignment: Alignment.topLeft,
-                          child: CustomText(
-                            txt: dateErrorMessage,
-                            fontSize: sw * 0.03,
-                            fontColor: AppColors.red,
-                          ),
+                      // Select Date Of Birth
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: CustomText(
+                          txt: 'Select Date Of Birth',
+                          fontSize: sw * 0.037,
+                          fontColor: AppColors.green,
                         ),
+                      ),
+                      08.height,
+                      // Date Of birth
+                      datePickerField(sw, () async{
+                        newDate = await ShowDateTimePicker.selectDate(context, DateTime.now(), dateOfBirthController);
+                      },),
                       06.height,
                       // Already Account Button
                       Align(
@@ -393,21 +169,25 @@ class _SignupScreenState extends State<SignupScreen> {
                                 context, RouteNames.loginScreen);
                           },
                           txt: 'Already Have An Account?',
-                          btnSize: sw * 0.02,
+                          btnSize: sw * 0.03,
                         ),
                       ),
                       10.height,
                       // Signup Button
                       CustomPrimaryBtn(
-                        onTap: () {
-                          setState(() => dateValidator = 0);
+                        onTap: () async {
                           if (formKey.signupValidateForm()) {
-                            setState(() {
-                              if (newDate != null) {
-                                dateValidator = 1;
-                                ageEligibility(newDate!);
-                              }
-                            });
+                            await AuthSignUPController().handleSignUp(
+                              context: context,
+                              authProvider: model,
+                              name: nameController.text.trim(),
+                              email: emailController.text.trim(),
+                              password: passwordController.text.trim(),
+                              dateOfBirth: newDate!,
+                              // userAddress: ,
+                              // This must be set in your app
+                              defaultProfile: defaultProfile,
+                            );
                           }
                         },
                         txt: 'Signup',
@@ -420,50 +200,124 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
             ),
-            if (isLoading == true)
-              Positioned.fill(
+            // Loading Effect On Screen
+            Consumer<AuthSignUpProvider>(
+              builder: (context, model, child) {
+                return model.isLoading
+                    ? Positioned.fill(
                   child: Container(
-                      color: AppColors.shiningWhite.withOpacity(0.8),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CustomText(
-                            txt: 'Please Wait ...',
-                            fontSize: sw * 0.04,
-                          ),
-                          20.height,
-                          SizedBox(
-                              width: sw * 0.08,
-                              height: sw * 0.08,
-                              child: CircularProgressIndicator(
-                                color: AppColors.teal,
-                              )),
-                        ],
-                      ))),
+                    color: AppColors.shiningWhite.withAlpha(200),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CustomText(txt: 'Please Wait ...', fontSize: sw * 0.04),
+                        20.height,
+                        SizedBox(
+                          width: sw * 0.08,
+                          height: sw * 0.08,
+                          child: CircularProgressIndicator(color: AppColors.teal),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                    : const SizedBox.shrink();
+              },
+            )
           ],
         ),
       ),
     );
   }
 
-  /// " animatedContainer " is a designed container,
-  // which have build-in container and lottie file (animation file)
-  animatedContainer(
-      {required String lottieFile,
-      required height,
-      required width,
-      required size}) {
-    return Container(
-        height: height,
-        width: width,
-        padding: EdgeInsets.all(size * 0.01),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(size * 0.02),
-            border: Border.all(
-              color: AppColors.shiningWhite,
-              width: 1,
-            )),
-        child: LottieBuilder.asset(lottieFile));
+  // Date Of birth
+  Widget datePickerField(double sw, VoidCallback onTap){
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: sw * 0.7,
+            child: TextFormField(
+                controller: dateOfBirthController,
+                readOnly: true,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                color: AppColors.black.withOpacity(0.7),
+                fontSize: sw * 0.04,
+              ),
+              decoration: InputDecoration(
+                errorStyle: TextStyle(fontSize: sw * 0.028, fontFamily: 'Poppins'),
+                errorMaxLines: 2,
+                errorBorder: OutlineInputBorder(
+                  borderSide: BorderSide(width: 0.1),
+                ),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(sw * 0.01),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: Icon(Icons.calendar_today, size: sw * 0.0,),
+              ),
+                validator: Validator.validateDateOfBirth,
+                onTap: () async {
+                  // Let user pick date
+                  final picked = await ShowDateTimePicker.selectDate(
+                    context,
+                    DateTime.now(),
+                    dateOfBirthController,
+                  );
+
+                  // No need to manually update controller, handled inside selectDate
+                },
+              ),
+          ),
+          // Date Of Birth Button
+          Icon(Icons.calendar_today, size: sw * 0.07,),
+        ],
+      ),
+    );
+  }
+
+  // Live Feedback
+  Widget _buildRequirement(String label, bool passed) {
+    return Row(
+      children: [
+        Icon(
+          passed ? Icons.check_circle : Icons.cancel,
+          color: passed ? Colors.green : Colors.red,
+          size: 16,
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(color: passed ? Colors.green : Colors.red, fontSize: 13)),
+      ],
+    );
+  }
+
+}
+
+class PasswordCreationRequirements extends StatelessWidget {
+  final String label;
+  final bool passed;
+  const PasswordCreationRequirements({super.key, required this.label, required this.passed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          passed ? Icons.check_circle : Icons.cancel,
+          color: passed ? Colors.green : Colors.red,
+          size: 16,
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(color: passed ? Colors.green : Colors.red, fontSize: 13)),
+      ],
+    );
   }
 }
+

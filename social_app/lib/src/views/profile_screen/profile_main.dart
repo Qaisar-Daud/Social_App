@@ -7,7 +7,7 @@ import 'package:social_app/src/providers/theme_provider.dart';
 import 'package:social_app/src/views/profile_screen/tab_bar_screens/app_setting_screen.dart';
 import 'package:social_app/src/views/profile_screen/tab_bar_screens/saved_post_screen.dart';
 import 'package:social_app/src/views/profile_screen/tab_bar_screens/watch_user_uploaded_posts_screen.dart';
-import '../../firebase/current_user_info.dart';
+import '../../controllers/current_user_info.dart';
 import '../../helpers/constants.dart';
 import '../../utils/routes/routes_name.dart';
 import '../../widgets/custom_btn.dart';
@@ -96,12 +96,7 @@ class _ProfileMainScreenState extends State<ProfileMainScreen> with SingleTicker
             // Logout Button
             CustomTxtBtn(
                 onTap: () async {
-                  await firebaseAuth.signOut().whenComplete(
-                        () {
-                      Navigator.pushReplacementNamed(
-                          context, RouteNames.splashScreen);
-                    },
-                  );
+                  await firebaseAuth.signOut().whenComplete(() => Navigator.pushNamedAndRemoveUntil(context, RouteNames.splashScreen, (route) => false,),);
                 },
                 txt: 'Logout 🥺',
                 btnColor: AppColors.red,

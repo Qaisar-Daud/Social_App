@@ -4,46 +4,49 @@ import 'package:intl/intl.dart';
 import '../helpers/constants.dart';
 
 class ShowDateTimePicker {
-  static selectDate(context, selectedDate, dateEditingController) async {
+
+  static Future<DateTime?> selectDate(
+      BuildContext context,
+      DateTime selectedDate,
+      TextEditingController dateEditingController) async {
+
     DateTime? newSelectedDate = await showDatePicker(
-        keyboardType: TextInputType.datetime,
-        helpText: 'Date Of Brith',
-        switchToInputEntryModeIcon: const Icon(
-          Icons.drive_file_rename_outline,
-          size: 20,
-        ),
-        switchToCalendarEntryModeIcon: const Icon(
-          Icons.calendar_month,
-          size: 20,
-        ),
-        context: context,
-        initialDate: selectedDate ?? DateTime.now(),
-        firstDate: DateTime(1960),
-        lastDate: DateTime.now(),
-        builder: (BuildContext context, Widget? child) {
-          return Theme(
-            data: ThemeData.dark().copyWith(
-              colorScheme: ColorScheme.dark(
-                primary: AppColors.teal,
-                onPrimary: Colors.white,
-                surface: AppColors.white,
-                onSurface: AppColors.black,
-              ),
-              dialogTheme: DialogThemeData(backgroundColor: Colors.blue[500]),
+      keyboardType: TextInputType.datetime,
+      helpText: 'Date of Birth',
+      switchToInputEntryModeIcon: const Icon(Icons.drive_file_rename_outline, size: 20),
+      switchToCalendarEntryModeIcon: const Icon(Icons.calendar_month, size: 20),
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(1960),
+      lastDate: DateTime.now(),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppColors.teal,
+              onPrimary: Colors.white,
+              surface: AppColors.white,
+              onSurface: AppColors.black,
             ),
-            child: child!,
-          );
-        });
+            dialogTheme: DialogThemeData(backgroundColor: Colors.blue),
+          ),
+          child: child!,
+        );
+      },
+    );
 
     if (newSelectedDate != null) {
-      return newSelectedDate;
-      selectedDate = newSelectedDate;
+      // Set the date in yyyy-MM-dd format for validator
+      final formatted = DateFormat('yyyy-MM-dd').format(newSelectedDate);
+
       dateEditingController
-        ..text = DateFormat.yMMMd().format(selectedDate!)
-        ..selection = TextSelection.fromPosition(TextPosition(
-            offset: dateEditingController.text.length,
-            affinity: TextAffinity.upstream));
+        ..text = formatted
+        ..selection = TextSelection.fromPosition(
+          TextPosition(offset: formatted.length),
+        );
     }
+
+    return newSelectedDate;
   }
 
   static selectTime(

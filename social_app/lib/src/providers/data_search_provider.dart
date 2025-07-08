@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../firebase/current_user_info.dart';
+import '../controllers/current_user_info.dart';
 
 class SearchProvider with ChangeNotifier {
   List<QueryDocumentSnapshot<Map<String, dynamic>>> allUsers = [];

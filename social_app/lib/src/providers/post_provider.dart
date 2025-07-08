@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:social_app/src/firebase/current_user_info.dart';
+import 'package:social_app/src/controllers/current_user_info.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/post_model/comment_model.dart';

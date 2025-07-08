@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:social_app/src/controllers/forgot_password_controller.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:social_app/src/views/auth_screens/reset_password.dart';
 import '../../helpers/constants.dart';
@@ -11,86 +12,49 @@ import '../../widgets/custom_txt.dart';
 import '../../widgets/custom_txt_field.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
-  String? text;
-  ForgotPasswordScreen({super.key, this.text});
+  final String? text;
+
+  const ForgotPasswordScreen({super.key, this.text});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-
   bool isLoading = false;
 
-  FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
 
   // Form Provider Validate Forget Password Form
   final FormProvider formKey = FormProvider();
 
-  TextEditingController emailController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
-  // Password Reset Request:
-  // Below method is used to sent password reset request on firebase and then
-  // server feedback a reset link to client
-  request(String email) async{
-    try{
-      // If User Forgot Then Below Will Run
-      if(widget.text == ''){
-        await auth.sendPasswordResetEmail(email: email).then((value) {
-          setState(() {
-            isLoading = false;
-            showSnackBar('Your Request Sent Successfully\nPlease Wait Here...');
-          });
-        },).onError((error, stackTrace) {
-          showSnackBar("$error");
-        },);
-      } else{
-        // If User Want To Update Then This Will Run
-        emailVerifying(email);
-      }
-    } catch (er){
-      showSnackBar("$er");
-    }
+  ForgotPasswordController forgotPasswordController = ForgotPasswordController();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
   }
 
-  emailVerifying(String email) async {
-
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-
-    DocumentSnapshot<Map<String, dynamic>> userMap = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
-
-    try{
-
-      if(email == userMap['email']){
-
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ResetPasswordScreen(email: email),));
-
-      } else{
-          Future.delayed(Duration(seconds: 2)).then((value) {
-            setState(() {
-            showSnackBar('Your Email Not Match With Your Created Account Email Please Check Your Email Again Thank You');
-            isLoading = false;
-            });
-          },);
-      }
-
-    } catch (er){
-      showSnackBar("$er");
-    }
+  /// Password Reset Request
+  Future<void> request(String email) async {
+    forgotPasswordController.handleRequest(  context: context,
+      email: emailController.text.trim(),
+      onStart: () => setState(() => isLoading = true),
+      onComplete: () => setState(() => isLoading = false),
+      onError: (msg) => showSnackBar(msg),);
   }
 
   @override
   Widget build(BuildContext context) {
     final double sw = MediaQuery.sizeOf(context).width;
 
-
-    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>${widget.text}');
-
-    return SafeArea(
-      top: true,
-      child: Scaffold(
-        backgroundColor: AppColors.white.withOpacity(0.95),
-        body: Stack(
+    return Scaffold(
+      backgroundColor: AppColors.white.withOpacity(0.95),
+      body: SafeArea(
+        child: Stack(
           children: [
             SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -105,82 +69,118 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       100.height,
                       headDesign(sw),
                       40.height,
-                      // Random Txt
+
+                      /// Title
                       CustomText(
-                        txt: (widget.text == '') ?  'Forgot Password' : 'Update Password',
+                        txt: widget.text == null
+                            ? 'Forgot Password'
+                            : 'Update Password',
                         fontSize: sw * 0.04,
                         fontFamily: 'Serif',
                       ),
+
                       40.height,
-                      // Important Note about Email
+
+                      /// Info Note
                       CustomText(
-                          txt:
-                              'Note: Enter your email address. You will soon receive a link to create a new password via email.',
-                          fontSize: sw * 0.03,
-                          fontFamily: 'Serif',
-                          fontColor: AppColors.red),
+                        txt:
+                        'Note: Enter your email address',
+                        fontSize: sw * 0.03,
+                        fontFamily: 'Serif',
+                        fontColor: AppColors.red,
+                      ),
+
                       30.height,
-                      // Email Field
+
+                      /// Email Field
                       CustomTxtField(
                         iconData: Icons.email,
-                        hintTxt: 'Enter Here Email Address',
+                        hintTxt: 'Enter Email Address',
                         toHide: false,
                         keyboardType: TextInputType.emailAddress,
                         textController: emailController,
                         fieldValidator: Validator.validateEmail,
                         onChange: formKey.setEmail,
                       ),
+
                       60.height,
-                      // Send Email Button
+
+                      /// Button
                       CustomPrimaryBtn(
                         onTap: () {
-                          if(formKey.forgetPasswordValidateForm()){
-                            setState(() => isLoading = true);
-                            request(emailController.text);
+                          if (formKey.forgetPasswordValidateForm()) {
+                            request(emailController.text.trim());
                           }
                         },
                         txt: 'Send',
                         btnWidth: sw * 0.5,
                         btnHeight: sw * 0.1,
                       ),
+
                       10.height,
                     ],
                   ),
                 ),
               ),
             ),
-            if (isLoading == true)
+
+            /// Loading Spinner
+            if (isLoading)
               Positioned.fill(
-                  child: Container(
-                      color: AppColors.shiningWhite.withOpacity(0.8),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CustomText(
-                            txt: 'Please Wait ...',
-                            fontSize: sw * 0.04,
-                          ),
-                          20.height,
-                          SizedBox(
-                              width: sw * 0.08,
-                              height: sw * 0.08,
-                              child: CircularProgressIndicator(
-                                color: AppColors.teal,
-                              )),
-                        ],
-                      ))),
+                child: Container(
+                  color: AppColors.shiningWhite.withOpacity(0.8),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CustomText(
+                        txt: 'Please Wait ...',
+                        fontSize: sw * 0.04,
+                      ),
+                      20.height,
+                      SizedBox(
+                        width: sw * 0.08,
+                        height: sw * 0.08,
+                        child: CircularProgressIndicator(
+                          color: AppColors.teal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  /// Helper function to show a SnackBar
+  /// Head Icon
+  Widget headDesign(double sw) {
+    return Container(
+      padding: EdgeInsets.all(sw * 0.03),
+      decoration: BoxDecoration(
+        color: AppColors.teal,
+        borderRadius: BorderRadius.circular(sw * 0.04),
+        border: Border.all(
+          width: 1,
+          color: AppColors.shiningWhite,
+        ),
+      ),
+      child: Icon(
+        Icons.lock,
+        size: sw * 0.34,
+        color: AppColors.shiningWhite,
+      ),
+    );
+  }
+
+  /// Global Snackbar
   void showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         showCloseIcon: true,
         content: CustomText(
@@ -188,24 +188,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           fontSize: 12,
           fontColor: AppColors.white,
         ),
-      ),
-    );
-  }
-
-  headDesign(sw) {
-    return Container(
-      padding: EdgeInsets.all(sw * 0.03),
-      decoration: BoxDecoration(
-          color: AppColors.teal,
-          borderRadius: BorderRadius.circular(sw * 0.04),
-          border: Border.all(
-            width: 1,
-            color: AppColors.shiningWhite,
-          )),
-      child: Icon(
-        Icons.lock,
-        size: sw * 0.34,
-        color: AppColors.shiningWhite,
       ),
     );
   }

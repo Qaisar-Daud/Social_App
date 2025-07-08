@@ -9,9 +9,9 @@ import 'package:social_app/src/myapp.dart';
 import 'package:social_app/src/utils/routes/routes_name.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../firebase/current_user_info.dart';
+import '../../controllers/current_user_info.dart';
 import '../../helpers/constants.dart';
-import '../../models/profile_service.dart';
+import '../../controllers/profile_controller.dart';
 import '../../widgets/custom_btn.dart';
 import '../../widgets/custom_txt.dart';
 import '../../widgets/custom_txt_field.dart';
@@ -28,7 +28,7 @@ class EditUserProfileInfo extends StatefulWidget {
 
 class _EditUserProfileInfoState extends State<EditUserProfileInfo> {
 
-  final profileService = ProfileService();
+  final profileService = ProfileController();
 
 
   @override

@@ -1,15 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:social_app/src/views/chat_screen/main_chats_screen.dart';
 import '../views/bottom_bar_screens/create_post.dart';
 import '../views/bottom_bar_screens/home/home.dart';
-import '../views/bottom_bar_screens/search.dart';
+import '../views/bottom_bar_screens/notification.dart';
 import '../views/bottom_bar_screens/video/video_screen.dart';
 import '../views/main_screen.dart';
 
-class BottomNavProvider extends ChangeNotifier {
+class ScreenNavProvider extends ChangeNotifier {
 
-  int _selectedIndex = 1;
+  int _selectedIndex = 0;
 
   int get selectedIndex => _selectedIndex;
 
@@ -28,11 +29,11 @@ class BottomNavProvider extends ChangeNotifier {
 
     switch (index) {
       case 0:
-        _screen = const SearchScreen();
-      case 1:
         _screen = const HomeScreen();
+      case 1:
+        _screen = const NotificationScreen();
       case 2:
-        _screen = const CreatePostScreen();
+        _screen = const MainChatsScreen();
       case 3:
         _screen = const VideoScreen();
       default:

@@ -75,8 +75,7 @@ class AppThemes {
       ),
       iconTheme: IconThemeData(color: AppColors.white,),
       dataTableTheme: DataTableThemeData(),
-      tabBarTheme: TabBarTheme(
-        data: TabBarThemeData(
+      tabBarTheme: TabBarThemeData(
           dividerColor: AppColors.white,
           indicatorAnimation: TabIndicatorAnimation.elastic,
           // Height of the divider between tabs.
@@ -102,12 +101,9 @@ class AppThemes {
             color: AppColors.containerdarkmode,
           ),
         ),
-      ),
-      cardTheme: CardTheme(
-        data: CardThemeData(
+      cardTheme: CardThemeData(
           color: AppColors.containerdarkmode,
         ),
-      ),
       fontFamily: 'Poppins',
       switchTheme: SwitchThemeData(),
       useMaterial3: true,

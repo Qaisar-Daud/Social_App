@@ -1,15 +1,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:social_app/src/providers/auth_provider.dart';
+import 'package:social_app/src/providers/password_validator_provider.dart';
 import 'package:social_app/src/providers/data_search_provider.dart';
 import 'package:social_app/src/providers/isloading_provider.dart';
-import 'package:social_app/src/providers/bottom_nav_provider.dart';
+import 'package:social_app/src/providers/screen_nav_provider.dart';
 import 'package:social_app/src/providers/post_provider.dart';
 import 'package:social_app/src/providers/textfield_validation_provider.dart';
 import 'package:social_app/src/providers/theme_provider.dart';
 import 'package:social_app/src/utils/routes/routes.dart';
 import 'package:social_app/src/utils/routes/routes_name.dart';
 import 'package:social_app/src/utils/themes/app_theme.dart';
+import 'package:social_app/src/views/main_screen.dart';
+
+import 'controllers/location_controller.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -20,11 +25,20 @@ class MyApp extends StatelessWidget {
 
     return MultiProvider(
       providers: [
+        // 🔐 Auth SignIn Provider
+        ChangeNotifierProvider<AuthSignInProvider>(create: (context) => AuthSignInProvider(),),
+        // 🔐 Auth SignUp Provider
+        ChangeNotifierProvider<AuthSignUpProvider>(create: (context) => AuthSignUpProvider(),),
+        // 🔐 Auth SignUp Password Provider
+        ChangeNotifierProvider<PasswordValidatorProvider>(create: (context) => PasswordValidatorProvider(),),
+        // // 🔐 Auth Location Provider
+        // ChangeNotifierProvider<LocationProvider>(create: (context) => LocationProvider(),),
         // 🎨 Theme Provider
         ChangeNotifierProvider<ThemeProvider>(create: (context) => ThemeProvider(),),
         // Bottom Bar Screen Providers
-        ChangeNotifierProvider<BottomNavProvider>(
-            create: (_) => BottomNavProvider()),
+        ChangeNotifierProvider<ScreenNavProvider>(create: (_) => ScreenNavProvider()),
+        // // Tab Provider
+        // ChangeNotifierProvider<TabProvider>(create: (_) => TabProvider()),
         // Post Providers
         ChangeNotifierProvider<PostProvider>(create: (_) => PostProvider()),
         // isLoading Provider
@@ -46,6 +60,7 @@ class MyApp extends StatelessWidget {
           theme: AppThemes.lightTheme,
           // 🎨 Dark Theme
           darkTheme: AppThemes.darkTheme,
+          // Routes For All Screens
           initialRoute: RouteNames.splashScreen,
           onGenerateRoute: Routes.onGenerateRoute,
         ),

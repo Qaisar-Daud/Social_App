@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
 
-import '../../../firebase/current_user_info.dart';
+import '../../../controllers/current_user_info.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/custom_txt.dart';
 import '../edit_profile_info.dart';

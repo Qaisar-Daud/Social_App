@@ -7,7 +7,7 @@ import 'package:social_app/src/views/bottom_bar_screens/home/post/post_component
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/post_reactions.dart';
 import 'package:social_app/src/views/bottom_bar_screens/home/post/post_components/user_Info_Tile.dart';
 import 'package:social_app/src/widgets/shimmer_loader.dart';
-import '../../../../firebase/current_user_info.dart';
+import '../../../../controllers/current_user_info.dart';
 import '../../../../providers/post_provider.dart';
 import '../comment_section.dart';
 
