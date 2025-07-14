@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:social_app/src/helpers/empty_space.dart';
 import 'package:uuid/uuid.dart';
@@ -53,6 +55,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   List<Uint8List?> selectedMediaThumbnails = []; // Changed to Uint8List
   final PageController _pageController = PageController();
 
+  // upload time state variable start
+  // State variables to add
+  double _uploadProgress = 0.0;
+  bool _uploadComplete = false;
+  bool _uploadFailed = false;
+  String? _failedPostId;
+  Map<String, dynamic>? _failedPostData;
+
+  //upload time state variable end
+
   // Updated media picker function
   Future<void> pickMultipleMedia() async {
     try {
@@ -89,25 +101,42 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
-  // Thumbnail generator (updated to work with UI)
-  Future<dynamic> _generateThumbnail(File file) async {
+  /// Thumbnail generator (updated to work with UI)
+  // Future<dynamic> _generateThumbnail(File file) async {
+  //   try {
+  //     final thumbnailAsUint8List = await VideoThumbnail.thumbnailData(
+  //       video: file.path,
+  //       imageFormat: ImageFormat.JPEG,
+  //       maxWidth: 320,
+  //       quality: 50,
+  //       timeMs: 1000,
+  //     );
+  //
+  //     return thumbnailAsUint8List;
+  //   } catch (e) {
+  //     debugPrint("Error generating thumbnail: $e");
+  //     return null;
+  //   }
+  // }
+
+  // Get image provider for any media type
+  Future<Uint8List?> _generateThumbnail(dynamic source) async {
     try {
-      final thumbnailAsUint8List = await VideoThumbnail.thumbnailData(
-        video: file.path,
+      final String videoPath = source is File ? source.path : source;
+      final thumbnail = await VideoThumbnail.thumbnailData(
+        video: videoPath,
         imageFormat: ImageFormat.JPEG,
         maxWidth: 320,
         quality: 50,
         timeMs: 1000,
       );
-
-      return thumbnailAsUint8List;
+      return thumbnail;
     } catch (e) {
       debugPrint("Error generating thumbnail: $e");
       return null;
     }
   }
 
-  // Get image provider for any media type
   Future<ImageProvider> _imageProvider(File file) async {
     final isVideo =
         file.path.toLowerCase().endsWith('.mp4') ||
@@ -189,13 +218,29 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       appBar: AppBar(
         title: CustomText(txt: 'Create New Post'),
         actions: [
+          // Add Attach Button
+          InkWell(
+            onTap: pickMultipleMedia,
+            child: Padding(
+              padding: EdgeInsets.only(right: sw * 0.04),
+              child: Icon(
+                Icons.image_outlined,
+                size: sw * 0.07,
+                color: Colors.green,
+              ),
+            ),
+          ),
+          10.width,
+          // Share Button
           InkWell(
             onTap: () {
-              if (imgFile != null) {
-                getFileLink(postTextController.text, 'mixed');
-              } else {
-                uploadContent(postTextController.text, 'text');
-              }
+              // Add this to your build method where appropriate
+              _buildUploadStatus();
+              // if (imgFile != null) {
+              //   // getFileLink(postTextController.text, 'mixed');
+              // } else {
+              //   // uploadContent(postTextController.text, 'text');
+              // }
             },
             child: Padding(
               padding: EdgeInsets.only(right: sw * 0.04),
@@ -217,152 +262,96 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               padding: EdgeInsets.symmetric(horizontal: sw * 0.02),
               child: Consumer<ScreenNavProvider>(
                 builder: (context, navigateValue, child) {
-                  return Column(
-                    children: [
-                      // random text
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: sw * 0.04,
-                          vertical: sw * 0.02,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(sw * 0.08),
-                          ),
-                          border: Border.all(width: 0.5, color: AppColors.teal),
-                        ),
-                        child: Row(
-                          children: [
-                            // From Gallery
-                            IconButton(
-                              onPressed: pickMultipleMedia,
-                              icon: Icon(
-                                Icons.image_outlined,
-                                size: sw * 0.07,
-                                color: Colors.green,
-                              ),
+                  return SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Caption Field
+                        TextFormField(
+                          autofocus: true,
+                          canRequestFocus: true,
+                          controller: postTextController,
+                          style: TextStyle(fontSize: sw * 0.038),
+                          maxLines: null,
+                          decoration: InputDecoration(
+                            hintText: "What's on your mind?",
+                            hintStyle: TextStyle(
+                              fontSize: sw * 0.04,
+                              color: AppColors.grey.withOpacity(0.4),
                             ),
-                            // From Camera
-                            IconButton(
-                              onPressed: () {
-                                pickImg(ImageSource.camera);
-                              },
-                              icon: Icon(
-                                Icons.camera_outlined,
-                                size: sw * 0.07,
-                                color: Colors.green,
-                              ),
+                            border: const OutlineInputBorder(
+                              borderSide: BorderSide.none,
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                      01.height,
-                      // Show [ Images, Videos ] Content
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: sw * 0.01,
-                            vertical: sw * 0.01,
-                          ),
-                          margin: EdgeInsets.symmetric(vertical: sw * 0.01),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.only(
-                              topRight: Radius.circular(sw * 0.08),
-                            ),
-                            border: Border.all(width: 0.5, color: AppColors.teal),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
+
+                        // Media Preview Area
+                        if (selectedMediaFiles.isNotEmpty) ...[
+                          10.height,
+                          SizedBox(
+                            height: sw,
+                            child: Stack(
                               children: [
-                                // Caption Field
-                                TextFormField(
-                                  autofocus: true,
-                                  controller: postTextController,
-                                  style: TextStyle(fontSize: sw * 0.038),
-                                  maxLines: null,
-                                  decoration: InputDecoration(
-                                    hintText: "What's on your mind?",
-                                    hintStyle: TextStyle(
-                                      fontSize: sw * 0.04,
-                                      color: AppColors.grey.withOpacity(0.4),
-                                    ),
-                                    border: const OutlineInputBorder(
-                                      borderSide: BorderSide.none,
+                                // Swipe able Media Preview
+                                PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: selectedMediaFiles.length,
+                                  itemBuilder: (context, index) {
+                                    return _buildMediaPreview(index);
+                                  },
+                                ),
+
+                                // Remove Button
+                                Positioned(
+                                  top: 10,
+                                  left: 10,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      final currentPage = _pageController.page?.round() ?? 0;
+                                      removeMedia(currentPage);
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.close, color: Colors.white, size: 20),
                                     ),
                                   ),
                                 ),
-                            
-                                // Media Preview Area
-                                if (selectedMediaFiles.isNotEmpty) ...[
-                                  10.height,
-                                  SizedBox(
-                                    height: sw,
-                                    child: Stack(
-                                      children: [
-                                        // Swipe able Media Preview
-                                        PageView.builder(
-                                          controller: _pageController,
-                                          itemCount: selectedMediaFiles.length,
-                                          itemBuilder: (context, index) {
-                                            return _buildMediaPreview(index);
-                                          },
+
+                                // Page Indicator
+                                Positioned(
+                                  bottom: 10,
+                                  left: 0,
+                                  right: 0,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(
+                                      selectedMediaFiles.length,
+                                          (index) => Container(
+                                        margin: EdgeInsets.symmetric(horizontal: 4),
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _pageController.hasClients &&
+                                              (_pageController.page?.round() ?? 0) == index
+                                              ? AppColors.teal
+                                              : Colors.grey,
                                         ),
-                            
-                                        // Remove Button
-                                        Positioned(
-                                          top: 10,
-                                          left: 10,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              final currentPage = _pageController.page?.round() ?? 0;
-                                              removeMedia(currentPage);
-                                            },
-                                            child: Container(
-                                              padding: EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black54,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(Icons.close, color: Colors.white, size: 20),
-                                            ),
-                                          ),
-                                        ),
-                            
-                                        // Page Indicator
-                                        Positioned(
-                                          bottom: 10,
-                                          left: 0,
-                                          right: 0,
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: List.generate(
-                                              selectedMediaFiles.length,
-                                                  (index) => Container(
-                                                margin: EdgeInsets.symmetric(horizontal: 4),
-                                                width: 8,
-                                                height: 8,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: _pageController.hasClients &&
-                                                      (_pageController.page?.round() ?? 0) == index
-                                                      ? AppColors.teal
-                                                      : Colors.grey,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ],
-                                10.height,
+                                ),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                        10.height,
+                      ],
+                    ),
                   );
                 },
               ),
@@ -392,174 +381,451 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  /// Pre But Working Code
-
-  pickImg(ImageSource imgSource) async {
-    try {
-      await picker.pickImage(source: imgSource).then((xFile) {
-        if (xFile != null) {
-          setState(() => imgFile = File(xFile.path));
-        } else {
-          setState(() => snackBarMessage("You didn't select any image"));
-        }
-      });
-    } catch (er) {
-      setState(() => snackBarMessage("$er"));
+// Updated upload method
+  Future<void> uploadContent(String postText) async {
+    if (postText.isEmpty && selectedMediaFiles.isEmpty) {
+      snackBarMessage("Warning ⚠️: Post cannot be empty");
+      return;
     }
-  }
 
-  // Image Download Link
-  getFileLink(String? caption, String? postType) async {
-    setState(() => isLoading = true);
-
-    String uid = currentUser!.uid;
-
-    int status = 1;
-
-    DocumentSnapshot<Map<String, dynamic>> currentUserData =
-        await firestore.collection('Users').doc(uid).get();
+    setState(() {
+      isLoading = true;
+      _uploadProgress = 0.0;
+      _uploadComplete = false;
+      _uploadFailed = false;
+    });
 
     try {
-      String postId = const Uuid().v1();
-      String fileName = const Uuid().v1().substring(0, 12);
+      final postId = const Uuid().v1();
+      final userDoc = await firestore.collection('Users').doc(currentUser!.uid).get();
+      final userId = userDoc['userId'];
 
-      Map<String, dynamic> postMap = {
+      // Prepare post data
+      final postMap = {
         "postId": postId,
-        "userId": currentUserData['userId'],
-        "userName": currentUserData['fullName'],
-        "userProfilePic": currentUserData['imgUrl'],
-        "postText": caption, // yet we can say => File's Caption
+        "userId": userId,
+        "userName": userDoc['fullName'],
+        "userProfilePic": userDoc['imgUrl'],
+        "postText": postText,
         "timestamp": FieldValue.serverTimestamp(),
-        "PostType": postType, // => mixed / text
+        "PostType": selectedMediaFiles.isEmpty ? 'text' : 'media',
         "isPrivate": false,
-        "isAvailable": true,
+        "isAvailable": false, // Will be true after successful upload
         "commentsCount": 0,
-        "commentBy": [],
         "likesCount": 0,
-        "likedBy": [],
         "sharesCount": 0,
-        "sharesBy": [],
         "location": 'Pakistan',
         "postImages": [],
         "postVideos": [],
-        "tags": [],
+        "videoThumbnails": [], // New field for video thumbnails
+        "uploadProgress": 0,
+        "uploadStatus": "uploading",
       };
 
-      await firestore
+      // Create post document first
+      final postRef = firestore
           .collection('Posts')
-          .doc(currentUserData['userId'])
+          .doc(userId)
           .collection('Post')
-          .doc(postId)
-          .set(postMap);
+          .doc(postId);
 
-      var ref = firebaseStorage
-          .ref()
-          .child('images')
-          .child(currentUserData['userId'])
-          .child('PostImages')
-          .child(postId)
-          .child(fileName);
+      await postRef.set(postMap);
 
-      var uploadTask = await ref.putFile(File(imgFile!.path)).catchError((
-        onError,
-      ) async {
-        firestore
-            .collection('Posts')
-            .doc(currentUserData['userId'])
-            .collection('Post')
-            .doc(postId)
-            .delete();
+      /// Upload media files if any
+      // if (selectedMediaFiles.isNotEmpty) {
+      //   final List<String> imageUrls = [];
+      //   final List<String> videoUrls = [];
+      //   final List<String> videoThumbnails = [];
+      //
+      //   for (int i = 0; i < selectedMediaFiles.length; i++) {
+      //     final file = selectedMediaFiles[i];
+      //     final isVideo = file.path.toLowerCase().endsWith('.mp4') ||
+      //         file.path.toLowerCase().endsWith('.mov');
+      //
+      //     final fileName = '${const Uuid().v1().substring(0, 12)}${path.extension(file.path)}';
+      //     final storagePath = isVideo
+      //         ? 'videos/$userId/PostVideos/$postId/$fileName'
+      //         : 'images/$userId/PostImages/$postId/$fileName';
+      //
+      //     // Upload main file
+      //     final uploadTask = firebaseStorage.ref(storagePath).putFile(file);
+      //
+      //     // Update progress
+      //     uploadTask.snapshotEvents.listen((taskSnapshot) {
+      //       setState(() {
+      //         _uploadProgress = (taskSnapshot.bytesTransferred / taskSnapshot.totalBytes) * 100;
+      //       });
+      //       postRef.update({'uploadProgress': _uploadProgress});
+      //     });
+      //
+      //     // Wait for upload to complete
+      //     final taskSnapshot = await uploadTask.whenComplete(() {});
+      //     final downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      //
+      //     if (isVideo) {
+      //       videoUrls.add(downloadUrl);
+      //       /// Generate and upload thumbnail
+      //       // final thumbnail = await _generateThumbnail(file.path);
+      //       // if (thumbnail != null) {
+      //       //   final thumbnailUrl = await _uploadThumbnail(thumbnail, userId, postId);
+      //       //   videoThumbnails.add(thumbnailUrl);
+      //       // }
+      //       final thumbnail = await _generateThumbnail(file); // Now accepts File object
+      //       if (thumbnail != null) {
+      //         final thumbnailUrl = await _uploadThumbnail(thumbnail, userId, postId);
+      //         videoThumbnails.add(thumbnailUrl);
+      //       }
+      //     } else {
+      if (selectedMediaFiles.isNotEmpty) {
+        final List<String> imageUrls = [];
+        final List<String> videoUrls = [];
+        final List<String> videoThumbnails = [];
 
-        status = 0;
-      });
+        for (int i = 0; i < selectedMediaFiles.length; i++) {
+          final file = selectedMediaFiles[i];
+          final isVideo = file.path.toLowerCase().endsWith('.mp4') ||
+              file.path.toLowerCase().endsWith('.mov');
 
-      if (status == 1) {
-        String imgUrl = await uploadTask.ref.getDownloadURL();
-        await firestore
-            .collection('Posts')
-            .doc(currentUserData['userId'])
-            .collection('Post')
-            .doc(postId)
-            .update({
-              'postImages': [imgUrl],
+          final fileName = '${const Uuid().v1().substring(0, 12)}${path
+              .extension(file.path)}';
+          final storagePath = isVideo
+              ? 'videos/$userId/PostVideos/$postId/$fileName'
+              : 'images/$userId/PostImages/$postId/$fileName';
+
+          // Upload main file
+          final uploadTask = firebaseStorage.ref(storagePath).putFile(file);
+
+          // Update progress
+          uploadTask.snapshotEvents.listen((taskSnapshot) {
+            setState(() {
+              _uploadProgress =
+                  (taskSnapshot.bytesTransferred / taskSnapshot.totalBytes) *
+                      100;
             });
-        postTextController.clear();
-        imgFile = null;
-        snackBarMessage('Successful Uploaded');
+            postRef.update({'uploadProgress': _uploadProgress});
+          });
+
+          // Wait for upload to complete
+          final taskSnapshot = await uploadTask.whenComplete(() {});
+          final downloadUrl = await taskSnapshot.ref.getDownloadURL();
+
+          if (isVideo) {
+            videoUrls.add(downloadUrl);
+            // Generate and upload thumbnail
+            final thumbnail = await _generateThumbnail(
+                file); // Now accepts File object
+            if (thumbnail != null) {
+              final thumbnailUrl = await _uploadThumbnail(
+                  thumbnail, userId, postId);
+              videoThumbnails.add(thumbnailUrl);
+            }
+          } else {
+            imageUrls.add(downloadUrl);
+          }
+        }
+        /// Update post with media URLs
+      //   await postRef.update({
+      //     'postImages': imageUrls,
+      //     'postVideos': videoUrls,
+      //     'videoThumbnails': videoThumbnails,
+      //     'isAvailable': true,
+      //     'uploadStatus': 'completed',
+      //   });
+        await postRef.update({
+          'postImages': imageUrls,
+          'postVideos': videoUrls,
+          'videoThumbnails': videoThumbnails,
+          'isAvailable': true,
+          'uploadStatus': 'completed',
+        });
+      } else {
+        // Text-only post
+        await postRef.update({
+          'isAvailable': true,
+          'uploadStatus': 'completed',
+        });
       }
-    } catch (er) {
+
+      // Success
       setState(() {
-        snackBarMessage("$er");
-        isLoading = false;
+        _uploadComplete = true;
+        _showUploadCompleteNotification();
+        _resetPostForm();
       });
+    } catch (e) {
+      debugPrint('Upload error: $e');
+      setState(() {
+        _uploadFailed = true;
+        snackBarMessage("Upload failed. Tap to retry.");
+      });
+      // Store failed post data for retry
+      _failedPostData = {
+        'postText': postText,
+        'files': selectedMediaFiles,
+      };
     } finally {
       setState(() => isLoading = false);
     }
   }
 
-  // Upload Or Post On Firebase
-  uploadContent(String postText, String postType) async {
-    if (postText.isEmpty) {
-      setState(() {
-        snackBarMessage("Warning ⚠️: You can't upload an empty post 🥺");
-        isLoading = false;
-      });
-      return;
-    }
+// Helper method to upload thumbnail
+  Future<String> _uploadThumbnail(Uint8List thumbnail, String userId, String postId) async {
+    final fileName = '${const Uuid().v1().substring(0, 12)}.jpg';
+    final ref = firebaseStorage.ref()
+        .child('thumbnails')
+        .child(userId)
+        .child('PostThumbnails')
+        .child(postId)
+        .child(fileName);
 
-    setState(() => isLoading = true);
+    final uploadTask = await ref.putData(thumbnail);
+    return await uploadTask.ref.getDownloadURL();
+  }
 
-    String uid = currentUser!.uid;
+// Show upload complete notification
+  void _showUploadCompleteNotification() {
+    // You can use flutter_local_notifications package for actual notifications
+    snackBarMessage("Post uploaded successfully!");
+  }
 
-    DocumentSnapshot<Map<String, dynamic>> currentUserData =
-        await firestore.collection('Users').doc(uid).get();
+// Reset form after upload
+  void _resetPostForm() {
+    postTextController.clear();
+    selectedMediaFiles.clear();
+    selectedMediaThumbnails.clear();
+    _uploadProgress = 0.0;
+  }
 
-    try {
-      String postId = const Uuid().v1();
-
-      Map<String, dynamic> postMap = {
-        "postId": postId,
-        "userId": currentUserData['userId'],
-        "userName": currentUserData['fullName'],
-        "userProfilePic": currentUserData['imgUrl'],
-        "postText": postText, // yet we can say postText
-        "timestamp": FieldValue.serverTimestamp(),
-        "PostType": postType, // => mixed / text
-        "isPrivate": false,
-        "isAvailable": true,
-        "commentsCount": 0,
-        "commentBy": [],
-        "likesCount": 0,
-        "likedBy": [],
-        "sharesCount": 0,
-        "sharesBy": [],
-        "location": 'Pakistan',
-        "postImages": [],
-        "postVideos": [],
-        "tags": [],
-      };
-
-      await firestore
-          .collection('Posts')
-          .doc(currentUserData['userId'])
-          .collection('Post')
-          .doc(postId)
-          .set(postMap);
-
-      // ✅ Clear UI state properly
-      setState(() {
-        snackBarMessage("Post Successfully Uploaded ✅");
-        isLoading = false;
-        postTextController.clear();
-        imgFile = null; // 🔥 Ensure image is cleared
-      });
-    } catch (er) {
-      setState(() {
-        snackBarMessage("$er");
-        isLoading = false;
-      });
+// Retry failed upload
+  Future<void> _retryUpload() async {
+    if (_failedPostData != null) {
+      await uploadContent(_failedPostData!['postText']);
     }
   }
+
+// UI for upload status
+  Widget _buildUploadStatus() {
+    if (isLoading) {
+      return Column(
+        children: [
+          LinearProgressIndicator(
+            value: _uploadProgress / 100,
+            backgroundColor: Colors.grey[200],
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.teal),
+          ),
+          Text('Uploading: ${_uploadProgress.toStringAsFixed(1)}%'),
+          if (_uploadProgress < 100)
+            TextButton(
+              onPressed: () {
+                // Option to cancel upload
+                setState(() {
+                  isLoading = false;
+                  _uploadFailed = true;
+                });
+              },
+              child: Text('Cancel'),
+            ),
+        ],
+      );
+    } else if (_uploadFailed) {
+      return Column(
+        children: [
+          Text('Upload failed', style: TextStyle(color: Colors.red)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: _retryUpload,
+                child: Text('Retry'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _uploadFailed = false;
+                    _resetPostForm();
+                  });
+                },
+                child: Text('Cancel'),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else if (_uploadComplete) {
+      return Text('Upload complete!', style: TextStyle(color: Colors.green));
+    }
+    return SizedBox();
+  }
+
+  /// Pre But Working Code
+  //
+  // pickImg(ImageSource imgSource) async {
+  //   try {
+  //     await picker.pickImage(source: imgSource).then((xFile) {
+  //       if (xFile != null) {
+  //         setState(() => imgFile = File(xFile.path));
+  //       } else {
+  //         setState(() => snackBarMessage("You didn't select any image"));
+  //       }
+  //     });
+  //   } catch (er) {
+  //     setState(() => snackBarMessage("$er"));
+  //   }
+  // }
+  //
+  // // Image Download Link
+  // getFileLink(String? caption, String? postType) async {
+  //   setState(() => isLoading = true);
+  //
+  //   String uid = currentUser!.uid;
+  //
+  //   int status = 1;
+  //
+  //   DocumentSnapshot<Map<String, dynamic>> currentUserData =
+  //       await firestore.collection('Users').doc(uid).get();
+  //
+  //   try {
+  //     String postId = const Uuid().v1();
+  //     String fileName = const Uuid().v1().substring(0, 12);
+  //
+  //     Map<String, dynamic> postMap = {
+  //       "postId": postId,
+  //       "userId": currentUserData['userId'],
+  //       "userName": currentUserData['fullName'],
+  //       "userProfilePic": currentUserData['imgUrl'],
+  //       "postText": caption, // yet we can say => File's Caption
+  //       "timestamp": FieldValue.serverTimestamp(),
+  //       "PostType": postType, // => mixed / text
+  //       "isPrivate": false,
+  //       "isAvailable": true,
+  //       "commentsCount": 0,
+  //       "commentBy": [],
+  //       "likesCount": 0,
+  //       "likedBy": [],
+  //       "sharesCount": 0,
+  //       "sharesBy": [],
+  //       "location": 'Pakistan',
+  //       "postImages": [],
+  //       "postVideos": [],
+  //       "tags": [],
+  //     };
+  //
+  //     await firestore
+  //         .collection('Posts')
+  //         .doc(currentUserData['userId'])
+  //         .collection('Post')
+  //         .doc(postId)
+  //         .set(postMap);
+  //
+  //     var ref = firebaseStorage
+  //         .ref()
+  //         .child('images')
+  //         .child(currentUserData['userId'])
+  //         .child('PostImages')
+  //         .child(postId)
+  //         .child(fileName);
+  //
+  //     var uploadTask = await ref.putFile(File(imgFile!.path)).catchError((
+  //       onError,
+  //     ) async {
+  //       firestore
+  //           .collection('Posts')
+  //           .doc(currentUserData['userId'])
+  //           .collection('Post')
+  //           .doc(postId)
+  //           .delete();
+  //
+  //       status = 0;
+  //     });
+  //
+  //     if (status == 1) {
+  //       String imgUrl = await uploadTask.ref.getDownloadURL();
+  //       await firestore
+  //           .collection('Posts')
+  //           .doc(currentUserData['userId'])
+  //           .collection('Post')
+  //           .doc(postId)
+  //           .update({
+  //             'postImages': [imgUrl],
+  //           });
+  //       postTextController.clear();
+  //       imgFile = null;
+  //       snackBarMessage('Successful Uploaded');
+  //     }
+  //   } catch (er) {
+  //     setState(() {
+  //       snackBarMessage("$er");
+  //       isLoading = false;
+  //     });
+  //   } finally {
+  //     setState(() => isLoading = false);
+  //   }
+  // }
+  //
+  // // Upload Or Post On Firebase
+  // uploadContent(String postText, String postType) async {
+  //   if (postText.isEmpty) {
+  //     setState(() {
+  //       snackBarMessage("Warning ⚠️: You can't upload an empty post 🥺");
+  //       isLoading = false;
+  //     });
+  //     return;
+  //   }
+  //
+  //   setState(() => isLoading = true);
+  //
+  //   String uid = currentUser!.uid;
+  //
+  //   DocumentSnapshot<Map<String, dynamic>> currentUserData =
+  //       await firestore.collection('Users').doc(uid).get();
+  //
+  //   try {
+  //     String postId = const Uuid().v1();
+  //
+  //     Map<String, dynamic> postMap = {
+  //       "postId": postId,
+  //       "userId": currentUserData['userId'],
+  //       "userName": currentUserData['fullName'],
+  //       "userProfilePic": currentUserData['imgUrl'],
+  //       "postText": postText, // yet we can say postText
+  //       "timestamp": FieldValue.serverTimestamp(),
+  //       "PostType": postType, // => mixed / text
+  //       "isPrivate": false,
+  //       "isAvailable": true,
+  //       "commentsCount": 0,
+  //       "commentBy": [],
+  //       "likesCount": 0,
+  //       "likedBy": [],
+  //       "sharesCount": 0,
+  //       "sharesBy": [],
+  //       "location": 'Pakistan',
+  //       "postImages": [],
+  //       "postVideos": [],
+  //       "tags": [],
+  //     };
+  //
+  //     await firestore
+  //         .collection('Posts')
+  //         .doc(currentUserData['userId'])
+  //         .collection('Post')
+  //         .doc(postId)
+  //         .set(postMap);
+  //
+  //     // ✅ Clear UI state properly
+  //     setState(() {
+  //       snackBarMessage("Post Successfully Uploaded ✅");
+  //       isLoading = false;
+  //       postTextController.clear();
+  //       imgFile = null; // 🔥 Ensure image is cleared
+  //     });
+  //   } catch (er) {
+  //     setState(() {
+  //       snackBarMessage("$er");
+  //       isLoading = false;
+  //     });
+  //   }
+  // }
 }
 
 // Updated VideoPlayerScreen with thumbnail and better UI
