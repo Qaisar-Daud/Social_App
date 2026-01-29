@@ -1,5 +1,11 @@
 # Glintor
 
+## Android apk Download Link Is Below:
+https://github.com/Qaisar-Daud/Social_App/releases/download/v1.0.0/Glintor.apk
+
+## LinkedIn Video Link:
+https://www.linkedin.com/posts/qaisar-daud-60454a289_flutter-firebase-socialmediainnovation-activity-7349736412935589888-ix7-?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=ACoAAEYGluQBlyqD906iJoHoAEfpq5wa2rj7uQ0
+
 Glintor is a modern social media application built with **Flutter** and **Firebase**, inspired by platforms like Facebook. The app focuses on real-time interaction, smooth performance, and a scalable architecture suitable for production-ready mobile applications.
 
 ---
