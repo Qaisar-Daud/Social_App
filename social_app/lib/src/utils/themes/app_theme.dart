@@ -75,38 +75,34 @@ class AppThemes {
       ),
       iconTheme: IconThemeData(color: AppColors.white,),
       dataTableTheme: DataTableThemeData(),
-      tabBarTheme: TabBarTheme(
-        data: TabBarThemeData(
-          dividerColor: AppColors.white,
-          indicatorAnimation: TabIndicatorAnimation.elastic,
-          // Height of the divider between tabs.
-          dividerHeight: 0,
-          labelStyle: TextStyle(
-              fontFamily: 'Serif',
-              color: AppColors.white
-          ),
-          overlayColor: WidgetStatePropertyAll(AppColors.white),
-          // Size of the tab indicator.
-          indicatorSize: TabBarIndicatorSize.tab,
-          // Color of the unselected tab labels.
-          unselectedLabelColor: AppColors.white,
-          // Style for the unselected tab labels.
-          unselectedLabelStyle: TextStyle(
-              fontFamily: 'Serif',
-              color: AppColors.white,
-              fontWeight: FontWeight.bold),
-          // Color of the selected tab labels.
-          labelColor: AppColors.white,
-          // Decoration for the tab indicator.
-          indicator: BoxDecoration(
-            color: AppColors.containerdarkmode,
-          ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: AppColors.white,
+        indicatorAnimation: TabIndicatorAnimation.elastic,
+        // Height of the divider between tabs.
+        dividerHeight: 0,
+        labelStyle: TextStyle(
+            fontFamily: 'Serif',
+            color: AppColors.white
         ),
-      ),
-      cardTheme: CardTheme(
-        data: CardThemeData(
+        overlayColor: WidgetStatePropertyAll(AppColors.white),
+        // Size of the tab indicator.
+        indicatorSize: TabBarIndicatorSize.tab,
+        // Color of the unselected tab labels.
+        unselectedLabelColor: AppColors.white,
+        // Style for the unselected tab labels.
+        unselectedLabelStyle: TextStyle(
+            fontFamily: 'Serif',
+            color: AppColors.white,
+            fontWeight: FontWeight.bold),
+        // Color of the selected tab labels.
+        labelColor: AppColors.white,
+        // Decoration for the tab indicator.
+        indicator: BoxDecoration(
           color: AppColors.containerdarkmode,
         ),
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.containerdarkmode,
       ),
       fontFamily: 'Poppins',
       switchTheme: SwitchThemeData(),
